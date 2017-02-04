@@ -1,10 +1,6 @@
 package update
 
-import (
-
-)
-
-
+import "fmt"
 
 /* base frame
 * a frame begin with "0xDB0xF3".....
@@ -12,9 +8,10 @@ import (
 
 const (
 	FRAME_HEADER_LEN = 4    //a frame header is 4 bytes
-	FRAMEFLAG0       = 0xDB //a frame is started with "\xdb\xf3"
-	FRAMEFLAG1       = 0xF3 //
+	SECDATA_HEADER_LEN = 5  //a secData header len
+	FRAMEFLAG       = 0xf3db //a frame is started with "0xf3db"
 	MAX_DATA_LEN     = 1024 // the max frame data length
+	MAX_FRAME_LEN    = 1080 + FRAME_HEADER_LEN
 	CMDFRAME         = 0    //command frame flag
 	DATAFRAME        = 1    //data frame flag
 
@@ -40,9 +37,10 @@ var CMD = [MaxCmdLen]string{
 }
 
 type Frame struct {
-	flag uint16
+	flag uint16 
 	length uint16
 	data []byte
+
 }
 
 type SecData struct {
@@ -63,12 +61,14 @@ func JoinCmd(cmd string,params [][2]string)[]byte{
 		b = append(b, []byte(":")...)
 		b = append(b, []byte(v[1])...)
 	}
-	b = append(b, []byte("\0")...)
-	return b
+	//in go lang,it must octal express Null character
+	//b = append(b, []byte("\000")...)
+	length := len(b)
+	return b[:length]
 }
 
-func MakeCmdStr(cmdtype,command string)[]byte{
-	switch cmdtype {
+func MakeCmdStr(cmdType,command string)[]byte{
+	switch cmdType {
 	case CMD[LOGIN]:
 		return JoinCmd(CMD[LOGIN],[][2]string{{"passwd", command},{"flage","HandleVersion"}})
 	case CMD[EXEC]:
@@ -87,40 +87,45 @@ func MakeCmdStr(cmdtype,command string)[]byte{
 
 }
 
-func MakeCmdPacket(cmd string, params...string){
-
+func MakeCmdPacket(cmdType string, params string) ([]byte,int){
+	cmdByte := MakeCmdStr(cmdType,params)
+	fmt.Println("cmdByte:",cmdByte)
+	return BuildFrame(CMDFRAME,cmdByte)
 }
 
-func MakeDataPacket(content []byte){
-	BuildPacket(DATAFRAME,content)
+func MakeDataPacket(content []byte)([]byte,int){
+	return BuildFrame(DATAFRAME,content)
 }
 
-//写错了
-//TODO:协议格式写错了
-func BuildPacket(flag byte, content[]byte)[]byte{
-	sec := NewLEStream()
-	sec.WriteByte(FRAMEFLAG0)
-	sec.WriteByte(FRAMEFLAG1)
-	contentLength := len(content)
-	//sec.WriteByte(contentLength%256)
-	//sec.WriteByte(contentLength/256)
-	sec.WriteUint16(contentLength)
+
+/*        1 byte      1 byte   　2 byte    1byte       1 byte      2byte  1 byte  less than 1024 byte
+ * 格式:[FRAMEFLAG0][FRAMEFLAG0][length]([FRAMEFLAG0][FRAMEFLAG0][length][flag][data........])
+ *      前两2个是协议开头标志　　后面数据字节数　　　括号里是加密的数据　flag表示是数据还是命令　data为真实数据　　　　　　　　
+ */
+func BuildFrame(flag byte, content[]byte)([]byte, int){
+	secBuff := make([]byte,MAX_DATA_LEN)
+	sec := NewBEStream(secBuff)
+	sec.WriteUint16(FRAMEFLAG)
+	contentLength := len(content) + 1
+	sec.WriteUint16(uint16(contentLength))
 	sec.WriteByte(flag)
 	sec.WriteBuff(content)
-	SecData := des_enc()
 
 
-	frame := NewLEStream()
-	frame.WriteByte(FRAMEFLAG0)
-	frame.WriteByte(FRAMEFLAG1)
-	secLength := len(sec.buff)
-	//frame.WriteByte(secLength%256)
-	//frame.WriteByte(secLength/256)
-	frame.WriteUint16(secLength)
-	frame.WriteBuff(SecData)
+	//fmt.Println("secData:",secData)
 
-	totalLength := len(frame.buff)
-	return frame.buff[:totalLength]
+	frameBuff := make([]byte,MAX_FRAME_LEN)
+	frame := NewBEStream(frameBuff)
+	frame.WriteUint16(FRAMEFLAG)
+	secLength := EncLen(sec.pos)
+	fmt.Println("before enc secData len",sec.pos	)
+	fmt.Println("after enc secData len:",secLength)
+	frame.WriteUint16(uint16(secLength))
+
+	//function Encrypt will combine secData and FrameData
+	buf,_ := Encrypt(sec.buff[:sec.pos],frame.buff[:frame.pos])
+	fmt.Println("whole frame length:",len(buf))
+	return buf,len(buf)
 }
 
 func ReadPacket(data []byte){
@@ -137,19 +142,5 @@ func NewFrame(flag int, content []byte) *Frame {
 	return &Frame{
 
 	}
-}
-
-func HeaderLen() int{
-	return FRAME_HEADER_LEN
-}
-
-func MaxDataLen() int{
-	return MAX_DATA_LEN
-}
-
-//TODO:
-func SplitByLength(str string,len int)[]string{
-
-	return []string("")
 }
 

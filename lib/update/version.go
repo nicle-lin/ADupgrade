@@ -1,3 +1,3 @@
 package update
 
-const VERSION  = "3.0.0"
+const VER  = "3.0.0"

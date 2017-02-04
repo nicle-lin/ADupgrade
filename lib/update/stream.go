@@ -44,13 +44,15 @@ type LEStream struct {
 	buff []byte
 }
 
-func NewBEStream() *BEStream {
+func NewBEStream(buff []byte) *BEStream {
 	return &BEStream{
+		buff:buff,
 	}
 }
 
-func NewLEStream() *LEStream {
+func NewLEStream(buff []byte) *LEStream {
 	return &LEStream{
+		buff:buff,
 	}
 }
 

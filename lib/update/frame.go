@@ -89,7 +89,9 @@ func MakeCmdStr(cmdType,command string)[]byte{
 
 func MakeCmdPacket(cmdType string, params string) ([]byte,int){
 	cmdByte := MakeCmdStr(cmdType,params)
-	fmt.Println("cmdByte:",cmdByte)
+	fmt.Printf("cmdByte:%#v\n",cmdByte)
+
+	fmt.Println("-------------------------------------")
 	return BuildFrame(CMDFRAME,cmdByte)
 }
 
@@ -104,28 +106,33 @@ func MakeDataPacket(content []byte)([]byte,int){
  */
 func BuildFrame(flag byte, content[]byte)([]byte, int){
 	secBuff := make([]byte,MAX_DATA_LEN)
-	sec := NewBEStream(secBuff)
+	sec := NewLEStream(secBuff)
 	sec.WriteUint16(FRAMEFLAG)
-	contentLength := len(content) + 1
+	contentLength := len(content)
 	sec.WriteUint16(uint16(contentLength))
 	sec.WriteByte(flag)
 	sec.WriteBuff(content)
 
+	fmt.Printf("secData:%#v\n",sec.buff[:sec.pos])
 
 	//fmt.Println("secData:",secData)
 
 	frameBuff := make([]byte,MAX_FRAME_LEN)
-	frame := NewBEStream(frameBuff)
+	frame := NewLEStream(frameBuff)
 	frame.WriteUint16(FRAMEFLAG)
 	secLength := EncLen(sec.pos)
-	fmt.Println("before enc secData len",sec.pos	)
-	fmt.Println("after enc secData len:",secLength)
+	fmt.Printf("before enc secData len:%x\n",sec.pos)
+	fmt.Printf("after enc secData len:%x\n",secLength)
 	frame.WriteUint16(uint16(secLength))
 
+	tempBuff := make([]byte,MAX_FRAME_LEN)
 	//function Encrypt will combine secData and FrameData
-	buf,_ := Encrypt(sec.buff[:sec.pos],frame.buff[:frame.pos])
-	fmt.Println("whole frame length:",len(buf))
-	return buf,len(buf)
+
+	buf,_ := Encrypt(sec.buff[:sec.pos],tempBuff)
+
+	frame.WriteBuff(buf)
+	fmt.Printf("whole frame length:%x\n",len(buf))
+	return frame.buff[:frame.pos],frame.pos
 }
 
 func ReadPacket(data []byte){

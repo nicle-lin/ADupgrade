@@ -60,6 +60,7 @@ func JoinCmd(cmd string,params [][2]string)[]byte{
 		b = append(b,[]byte(v[0])...)
 		b = append(b, []byte(":")...)
 		b = append(b, []byte(v[1])...)
+		b = append(b,[]byte("\n")...)
 	}
 	//in go lang,it must octal express Null character
 	//b = append(b, []byte("\000")...)
@@ -131,7 +132,7 @@ func BuildFrame(flag byte, content[]byte)([]byte, int){
 	buf,_ := Encrypt(sec.buff[:sec.pos],tempBuff)
 
 	frame.WriteBuff(buf)
-	fmt.Printf("whole frame length:%x\n",len(buf))
+	fmt.Printf("whole frame length:%x\n",frame.pos)
 	return frame.buff[:frame.pos],frame.pos
 }
 

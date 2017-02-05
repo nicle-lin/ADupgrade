@@ -22,13 +22,13 @@ typedef unsigned short  USHORT;
 typedef signed short	WORD;
 typedef unsigned int    HANDLE;
 typedef unsigned int    UINT;
-typedef void*		    PVOID;
+typedef void*		PVOID;
 typedef unsigned char   BOOLEAN;
 typedef unsigned char   BOOL;
-typedef void		    VOID;
+typedef void		VOID;
 typedef	unsigned int*	PULONG;
-typedef long		    LONG ;
-typedef char		    CHAR ;
+typedef long		LONG ;
+typedef char		CHAR ;
 typedef unsigned char	BYTE;
 
 #define ASSERT assert
@@ -523,9 +523,17 @@ int enc_len(int len)
 */
 import "C"
 import "fmt"
-
+/*
 func EncLen(len int) int{
 	return int(C.enc_len(C.int(len)))
+}
+*/
+func EncLen(len int) int{
+	if len % 8 == 0 {
+		return len + 2
+	}else{
+		return (len / 8 + 1) * 8 +2
+	}
 }
 
 //int enc(const char* pass, unsigned char *inbuf, int inlen, unsigned char *outbuf)

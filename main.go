@@ -28,8 +28,9 @@ func main() {
 	decmsg, _ := update.Decrypt(outmsg,outmsg)
 	fmt.Println("decmsg:",decmsg)
 
-	cmdstr ,_:= update.MakeCmdPacket("login","admin")
+	cmdstr ,outlen:= update.MakeCmdPacket("login","admin")
 	//fmt.Println("cmdstr:",cmdstr)
+	fmt.Printf("cmdstr len:%f\n",outlen)
 	fmt.Printf("cmdstr:%#v\n",cmdstr)
 
 	conn, err := net.Dial("tcp4", "192.168.1.100:51111")
@@ -66,6 +67,9 @@ func main() {
 	if err != nil{
 		fmt.Println("write buff:",err)
 	}
+
+	cmdstr2 ,_:= update.MakeCmdPacket("version","/app/appversion")
+	_, err = conn.Write(cmdstr2)
 
 	cmdstr1 ,_:= update.MakeCmdPacket("get","/app/appversion")
 	_, err = conn.Write(cmdstr1)

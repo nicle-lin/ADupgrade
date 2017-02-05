@@ -1,6 +1,9 @@
 package update
 
-import "fmt"
+import (
+	"fmt"
+	"net"
+)
 
 /* base frame
 * a frame begin with "0xDB0xF3".....
@@ -10,6 +13,7 @@ const (
 	FRAME_HEADER_LEN = 4    //a frame header is 4 bytes
 	SECDATA_HEADER_LEN = 5  //a secData header len
 	FRAMEFLAG       = 0xf3db //a frame is started with "0xf3db"
+	RFRAMEFLAG      = 0xdbf3  //big end
 	MAX_DATA_LEN     = 1024 // the max frame data length
 	MAX_FRAME_LEN    = 1080 + FRAME_HEADER_LEN
 	CMDFRAME         = 0    //command frame flag
@@ -136,19 +140,50 @@ func BuildFrame(flag byte, content[]byte)([]byte, int){
 	return frame.buff[:frame.pos],frame.pos
 }
 
-func ReadPacket(data []byte){
-
-}
-
-
-
-
-func NewFrame(flag int, content []byte) *Frame {
-
-
-
-	return &Frame{
-
+//read data from peer and decrypt data, and return data
+func ReadPacket(conn net.Conn)([]byte, error){
+	frameHeaderBuf := make([]byte,FRAME_HEADER_LEN)
+	var n int
+	var err error
+	n, err = conn.Read(frameHeaderBuf)
+	if n != FRAME_HEADER_LEN || err != nil{
+		fmt.Println("read frame len > Max frame len")
+		return nil, fmt.Errorf("frame len is wrong:#%#v",n)
 	}
+	frameHeader := NewLEStream(frameHeaderBuf)
+	frameFlag,_ := frameHeader.ReadUint16()
+	secDataLen,_ := frameHeader.ReadUint16()
+	if frameFlag != FRAMEFLAG{
+		fmt.Printf("frameflage is wrong:#%#v",frameFlag)
+		return nil, fmt.Errorf("frameflage is wrong:#%#v",frameFlag)
+	}
+
+	if secDataLen > MAX_DATA_LEN{
+		return nil, fmt.Errorf("sec data len is wrong:#%#v",secDataLen)
+	}
+
+	encSecData := make([]byte,secDataLen)
+	n, err = conn.Read(encSecData)
+
+	fmt.Printf("read frame enc data:%#v\n",encSecData)
+
+	var decSecData []byte
+	outSecData := make([]byte,MAX_DATA_LEN)
+	decSecData,err = Decrypt(encSecData,outSecData)
+	if err != nil{
+		fmt.Println("dec sec data error:",err)
+		return nil,fmt.Errorf("dec sec data error:",err)
+	}
+
+	secDataHeader := NewLEStream(decSecData)
+	secDataFlag,_ := secDataHeader.ReadUint16()
+	secDatalen, _ := secDataHeader.ReadUint16()
+	secDataType, _ := secDataHeader.ReadByte()
+	return decSecData[secDataHeader.pos:],nil
 }
 
+
+//just send data to peer
+func WritePacket(conn net.Conn,data[]byte) []byte{
+	return nil
+}

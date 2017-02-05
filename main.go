@@ -4,6 +4,7 @@ import (
 	"github.com/nicle-lin/ADupgrade/lib/update"
 	"fmt"
 	"net"
+	"time"
 )
 
 func main() {
@@ -67,18 +68,34 @@ func main() {
 	if err != nil{
 		fmt.Println("write buff:",err)
 	}
+	readBuf3, _  := update.ReadPacket(conn)
+	fmt.Println("read dec data string:",string(readBuf3[4:]))
 
-	cmdstr2 ,_:= update.MakeCmdPacket("version","/app/appversion")
-	_, err = conn.Write(cmdstr2)
+	//cmdstr2 ,_:= update.MakeCmdPacket("version","")
+	//_, err = conn.Write(cmdstr2)
 
 	cmdstr1 ,_:= update.MakeCmdPacket("get","/app/appversion")
 	_, err = conn.Write(cmdstr1)
 
-	var readbuf []byte
-	var n int
-	n , err = conn.Read(readbuf)
+	//readbuf := make([]byte,update.MAX_DATA_LEN)
+	//var n int
+	err = conn.SetReadDeadline(time.Now().Add(time.Second * 10))
 	if err != nil{
-		fmt.Println("read error:",err)
+		fmt.Printf("set readdeadline error:",err)
 	}
-	fmt.Println("read ",n ,"byte")
+
+	//n , err = conn.Read(readbuf)
+	readBuf, err2  := update.ReadPacket(conn)
+	if err2 != nil{
+		fmt.Println("read error:",err2)
+	}
+	//fmt.Println("read ",n ,"byte")
+	fmt.Printf("read sec dec data:%#v\n",readBuf)
+	fmt.Println("read dec data string:",string(readBuf[4:]))
+
+	readBuf, err2  := update.ReadPacket(conn)
+	fmt.Println("appversion data")
+
+	time.Sleep(10*time.Second)
+	_ = conn.Close()
 }

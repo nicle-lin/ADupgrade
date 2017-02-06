@@ -69,7 +69,7 @@ func main() {
 		fmt.Println("write buff:",err)
 	}
 	readBuf3, _  := update.ReadPacket(conn)
-	fmt.Println("read dec data string:",string(readBuf3[4:]))
+	fmt.Println("read dec data string:",string(readBuf3))
 
 	//cmdstr2 ,_:= update.MakeCmdPacket("version","")
 	//_, err = conn.Write(cmdstr2)
@@ -91,10 +91,10 @@ func main() {
 	}
 	//fmt.Println("read ",n ,"byte")
 	fmt.Printf("read sec dec data:%#v\n",readBuf)
-	fmt.Println("read dec data string:",string(readBuf[4:]))
+	fmt.Println("read dec data string:",string(readBuf))
 
-	readBuf, err2  := update.ReadPacket(conn)
-	fmt.Println("appversion data")
+	//readBuf, err2  := update.ReadPacket(conn)
+	//fmt.Println("appversion data")
 
 	time.Sleep(10*time.Second)
 	_ = conn.Close()

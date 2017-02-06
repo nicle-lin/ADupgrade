@@ -148,18 +148,18 @@ func ReadPacket(conn net.Conn)([]byte, error){
 	n, err = conn.Read(frameHeaderBuf)
 	if n != FRAME_HEADER_LEN || err != nil{
 		fmt.Println("read frame len > Max frame len")
-		return nil, fmt.Errorf("frame len is wrong:#%#v",n)
+		return nil, fmt.Errorf("frame len is wrong:#%#v\n",n)
 	}
 	frameHeader := NewLEStream(frameHeaderBuf)
 	frameFlag,_ := frameHeader.ReadUint16()
 	secDataLen,_ := frameHeader.ReadUint16()
 	if frameFlag != FRAMEFLAG{
-		fmt.Printf("frameflage is wrong:#%#v",frameFlag)
-		return nil, fmt.Errorf("frameflage is wrong:#%#v",frameFlag)
+		fmt.Printf("frameflage is wrong:0x%x",frameFlag)
+		return nil, fmt.Errorf("frameflage is wrong:#%#v\n",frameFlag)
 	}
 
 	if secDataLen > MAX_DATA_LEN{
-		return nil, fmt.Errorf("sec data len is wrong:#%#v",secDataLen)
+		return nil, fmt.Errorf("sec data len is wrong:#%#v\n",secDataLen)
 	}
 
 	encSecData := make([]byte,secDataLen)
@@ -172,13 +172,27 @@ func ReadPacket(conn net.Conn)([]byte, error){
 	decSecData,err = Decrypt(encSecData,outSecData)
 	if err != nil{
 		fmt.Println("dec sec data error:",err)
-		return nil,fmt.Errorf("dec sec data error:",err)
+		return nil,fmt.Errorf("dec sec data error:\n",err)
 	}
 
 	secDataHeader := NewLEStream(decSecData)
 	secDataFlag,_ := secDataHeader.ReadUint16()
-	secDatalen, _ := secDataHeader.ReadUint16()
+	if secDataFlag != FRAMEFLAG{
+		fmt.Printf("sec Data flag is wrong:0x%x\n",secDataFlag)
+		return nil,fmt.Errorf("sec Data flag is wrong:0x%x\n",secDataFlag)
+	}
+	dataLen, _ := secDataHeader.ReadUint16()
 	secDataType, _ := secDataHeader.ReadByte()
+	realDataLen := uint16(len(decSecData[secDataHeader.pos:]))
+	if dataLen != realDataLen{
+		fmt.Printf("sec Data len is wrong:0x%x\n",dataLen,"receive data len:ox%x\n",realDataLen)
+		return nil, fmt.Errorf("sec Data len is wrong:0x%x\n",dataLen,"receive data len:ox%x\n",realDataLen)
+	}
+	if secDataType != CMDFRAME && secDataType != DATAFRAME{
+		fmt.Printf("sec data type is wrong:0x%x\n",secDataType)
+		return nil, fmt.Errorf("sec data type is wrong:0x%x\n",secDataType)
+	}
+
 	return decSecData[secDataHeader.pos:],nil
 }
 

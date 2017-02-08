@@ -14,4 +14,8 @@ func main() {
 	conn.Read(readdata)
 	fmt.Println("readdata:",readdata)
 	conn.Write([]byte("from go"))
+
+	ip := "192.168.1.100"
+	port := "5000"
+	fmt.Println("ip + port:",ip+":"+port)
 }

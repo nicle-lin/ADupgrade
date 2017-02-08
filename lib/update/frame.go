@@ -13,7 +13,6 @@ const (
 	FRAME_HEADER_LEN = 4    //a frame header is 4 bytes
 	SECDATA_HEADER_LEN = 5  //a secData header len
 	FRAMEFLAG       = 0xf3db //a frame is started with "0xf3db"
-	RFRAMEFLAG      = 0xdbf3  //big end
 	MAX_DATA_LEN     = 1024 // the max frame data length
 	MAX_FRAME_LEN    = 1080 + FRAME_HEADER_LEN
 	CMDFRAME         = 0    //command frame flag
@@ -40,12 +39,6 @@ var CMD = [MaxCmdLen]string{
 	VERSION:  "version",
 }
 
-type Frame struct {
-	flag uint16 
-	length uint16
-	data []byte
-
-}
 
 type SecData struct {
 	flag uint16
@@ -53,6 +46,9 @@ type SecData struct {
 	typ uint8
 	data []byte
 }
+
+func (Sec *SecData)DataFrame()bool{return Sec.typ == DATAFRAME}
+func (Sec *SecData)CmdFrame()bool{return Sec.typ == CMDFRAME}
 
 
 //命令格式组合
@@ -109,95 +105,39 @@ func MakeDataPacket(content []byte)([]byte,int){
  * 格式:[FRAMEFLAG0][FRAMEFLAG0][length]([FRAMEFLAG0][FRAMEFLAG0][length][flag][data........])
  *      前两2个是协议开头标志　　后面数据字节数　　　括号里是加密的数据　flag表示是数据还是命令　data为真实数据　　　　　　　　
  */
-func BuildFrame(flag byte, content[]byte)([]byte, int){
-	secBuff := make([]byte,MAX_DATA_LEN)
+func BuildFrame(flag byte, content[]byte)(buf []byte,err error){
+	contentLength := len(content)
+	secBuff := make([]byte,contentLength+SECDATA_HEADER_LEN)
 	sec := NewLEStream(secBuff)
 	sec.WriteUint16(FRAMEFLAG)
-	contentLength := len(content)
 	sec.WriteUint16(uint16(contentLength))
 	sec.WriteByte(flag)
-	sec.WriteBuff(content)
-
+	err = sec.WriteBuff(content)
+	if err != nil{
+		return nil, err
+	}
 	fmt.Printf("secData:%#v\n",sec.buff[:sec.pos])
 
-	//fmt.Println("secData:",secData)
-
-	frameBuff := make([]byte,MAX_FRAME_LEN)
+	secLength := EncLen(sec.pos)
+	frameBuff := make([]byte,secLength+FRAME_HEADER_LEN)
 	frame := NewLEStream(frameBuff)
 	frame.WriteUint16(FRAMEFLAG)
-	secLength := EncLen(sec.pos)
 	fmt.Printf("before enc secData len:%x\n",sec.pos)
 	fmt.Printf("after enc secData len:%x\n",secLength)
 	frame.WriteUint16(uint16(secLength))
 
-	tempBuff := make([]byte,MAX_FRAME_LEN)
+	tempBuff := make([]byte,secLength+FRAME_HEADER_LEN)
 	//function Encrypt will combine secData and FrameData
 
-	buf,_ := Encrypt(sec.buff[:sec.pos],tempBuff)
-
-	frame.WriteBuff(buf)
+	buf,err = Encrypt(sec.buff[:sec.pos],tempBuff)
+	if err != nil {
+		return nil, err
+	}
+	err = frame.WriteBuff(buf)
+	if err != nil {
+		return nil,err
+	}
 	fmt.Printf("whole frame length:%x\n",frame.pos)
-	return frame.buff[:frame.pos],frame.pos
+	return frame.buff[:frame.pos], nil
 }
 
-//read data from peer and decrypt data, and return data
-func ReadPacket(conn net.Conn)([]byte, error){
-	frameHeaderBuf := make([]byte,FRAME_HEADER_LEN)
-	var n int
-	var err error
-	n, err = conn.Read(frameHeaderBuf)
-	if n != FRAME_HEADER_LEN || err != nil{
-		fmt.Println("read frame len > Max frame len")
-		return nil, fmt.Errorf("frame len is wrong:#%#v\n",n)
-	}
-	frameHeader := NewLEStream(frameHeaderBuf)
-	frameFlag,_ := frameHeader.ReadUint16()
-	secDataLen,_ := frameHeader.ReadUint16()
-	if frameFlag != FRAMEFLAG{
-		fmt.Printf("frameflage is wrong:0x%x",frameFlag)
-		return nil, fmt.Errorf("frameflage is wrong:#%#v\n",frameFlag)
-	}
-
-	if secDataLen > MAX_DATA_LEN{
-		return nil, fmt.Errorf("sec data len is wrong:#%#v\n",secDataLen)
-	}
-
-	encSecData := make([]byte,secDataLen)
-	n, err = conn.Read(encSecData)
-
-	fmt.Printf("read frame enc data:%#v\n",encSecData)
-
-	var decSecData []byte
-	outSecData := make([]byte,MAX_DATA_LEN)
-	decSecData,err = Decrypt(encSecData,outSecData)
-	if err != nil{
-		fmt.Println("dec sec data error:",err)
-		return nil,fmt.Errorf("dec sec data error:\n",err)
-	}
-
-	secDataHeader := NewLEStream(decSecData)
-	secDataFlag,_ := secDataHeader.ReadUint16()
-	if secDataFlag != FRAMEFLAG{
-		fmt.Printf("sec Data flag is wrong:0x%x\n",secDataFlag)
-		return nil,fmt.Errorf("sec Data flag is wrong:0x%x\n",secDataFlag)
-	}
-	dataLen, _ := secDataHeader.ReadUint16()
-	secDataType, _ := secDataHeader.ReadByte()
-	realDataLen := uint16(len(decSecData[secDataHeader.pos:]))
-	if dataLen != realDataLen{
-		fmt.Printf("sec Data len is wrong:0x%x\n",dataLen,"receive data len:ox%x\n",realDataLen)
-		return nil, fmt.Errorf("sec Data len is wrong:0x%x\n",dataLen,"receive data len:ox%x\n",realDataLen)
-	}
-	if secDataType != CMDFRAME && secDataType != DATAFRAME{
-		fmt.Printf("sec data type is wrong:0x%x\n",secDataType)
-		return nil, fmt.Errorf("sec data type is wrong:0x%x\n",secDataType)
-	}
-
-	return decSecData[secDataHeader.pos:],nil
-}
-
-
-//just send data to peer
-func WritePacket(conn net.Conn,data[]byte) []byte{
-	return nil
-}

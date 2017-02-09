@@ -11,7 +11,7 @@ type Address struct {
 }
 
 type SSU struct {
-	Flag int     //Same Version SSU packet has been unpack or not
+	Flag bool     //Same Version SSU packet has been unpack or not
 	Version string  //AD version
 	SSUName string   //SSU packet name
 }

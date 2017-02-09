@@ -2,7 +2,6 @@ package update
 
 import (
 	"fmt"
-	"net"
 )
 
 /* base frame

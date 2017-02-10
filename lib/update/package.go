@@ -1,6 +1,9 @@
 package update
 
-import "sync"
+import (
+	"sync"
+	"github.com/docker/docker/pkg/namesgenerator"
+)
 
 var Flag uint16
 var m *sync.RWMutex = new(sync.RWMutex)
@@ -32,13 +35,19 @@ func DecFlag(){
 
 //相同的版本的SSU只能解压一次,在没有解压完成之前其它goroute只能等待解压完成，需要channel来通信
 var once sync.Once
+func (S *Session)unpackSSU(name string){
+
+}
+
 func UnpackSSU(){
 	if !GetFlag(){
 		IncFlag()
 		//don't have to unpack SSU,because it has been unpacked
 		return
 	}
-
+	var name string
+	var S Session
+	once.Do(S.unpackSSU)
 
 
 	IncFlag()

@@ -1,14 +1,17 @@
 package main
 
 import (
-	"net"
+	//"net"
 	"fmt"
 	"os"
 	"log"
 	"strings"
+	"sync"
+	"time"
 )
 
 func main() {
+	/*
 	conn, err := net.Dial("tcp","192.168.1.100:51111")
 	if err != nil{
 		fmt.Println("Dial error:",err)
@@ -17,7 +20,7 @@ func main() {
 	conn.Read(readdata)
 	fmt.Println("readdata:",readdata)
 	conn.Write([]byte("from go"))
-
+	*/
 	ip := "192.168.1.100"
 	port := "5000"
 	fmt.Println("ip + port:",ip+":"+port)
@@ -42,4 +45,23 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	name := Name{i:10}
+	var once sync.Once
+	for i:=0; i <5;i++{
+		go func(i int){
+			once.Do(name.OnceDo)
+			fmt.Println("iii:",i)
+		}(i)
+		//fmt.Println("okokiiii:",i)
+	}
+	time.Sleep(2*time.Second)
+}
+
+type Name struct {
+	i int
+}
+
+func (n *Name)OnceDo(){
+	fmt.Println("i:",n.i)
 }

@@ -30,7 +30,8 @@ func DecFlag(){
 	}
 }
 
-
+//相同的版本的SSU只能解压一次,在没有解压完成之前其它goroute只能等待解压完成，需要channel来通信
+var once sync.Once
 func UnpackSSU(){
 	if !GetFlag(){
 		IncFlag()

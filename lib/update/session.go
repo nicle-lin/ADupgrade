@@ -8,7 +8,11 @@ import (
 type Address struct {
 	IP string
 	Port string
-	SerVersion string
+}
+
+type PeerInfo struct{
+	SerVersion int
+	Appversion string
 }
 
 type SSU struct {
@@ -20,6 +24,7 @@ type SSU struct {
 type Session struct {
 	Conn net.Conn
 	*Address
+	*PeerInfo
 	*SSU
 	*SecData
 	err error
@@ -86,7 +91,8 @@ func (S *Session)ReadPacket(){
 		//return nil, fmt.Errorf("sec data type is wrong:0x%x\n",secDataType)
 		S.err = fmt.Errorf("sec data type is wrong:0x%x\n",secDataType)
 	}
-
+	S.typ = secDataType
+	S.length = secDataLen
 	//return decSecData[secDataHeader.pos:],nil
 	S.data = decSecData[secDataHeader.pos:]
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"regexp"
 )
 
 func main() {
@@ -56,6 +57,21 @@ func main() {
 		//fmt.Println("okokiiii:",i)
 	}
 	time.Sleep(2*time.Second)
+	fmt.Println("-----------------------------------------")
+	text := "\nverversion:450\n"
+	reg := regexp.MustCompile(`version:[\d]+`)
+	fmt.Printf("%q\n", reg.FindAllString(text, -1))
+	str := reg.FindAllString(text,-1)[0]
+	version := strings.Split(str,":")[1]
+	fmt.Println("str:",version)
+	var all []byte
+	one := make([]byte,10)
+	one[9] = 2
+	two := make([]byte, 20)
+	two[19] = 1
+	all = one
+	all = append(all,two...)
+	fmt.Println("all:",all)
 }
 
 type Name struct {

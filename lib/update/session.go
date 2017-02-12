@@ -8,6 +8,7 @@ import (
 type Address struct {
 	IP string
 	Port string
+	SerVersion string
 }
 
 type SSU struct {

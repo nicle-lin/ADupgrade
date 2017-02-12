@@ -2,7 +2,6 @@ package update
 
 import (
 	"sync"
-	"github.com/docker/docker/pkg/namesgenerator"
 )
 
 var Flag uint16
@@ -45,7 +44,7 @@ func UnpackSSU(){
 		//don't have to unpack SSU,because it has been unpacked
 		return
 	}
-	var name string
+	//var name string
 	var S Session
 	once.Do(S.unpackSSU)
 

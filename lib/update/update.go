@@ -48,7 +48,7 @@ func Get(S *Session,RemoteFile ,LocalFile string)([]byte,error){
 		return allData,nil
 	}
 
-	err := ioutil.WriteFile(LocalFile, alldata, 0666)
+	err := ioutil.WriteFile(LocalFile, allData, 0666)
 	return nil,err
 }
 

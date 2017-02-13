@@ -12,7 +12,7 @@ type Address struct {
 
 type PeerInfo struct{
 	SerVersion int
-	Appversion string
+	AppVersion string
 }
 
 type SSU struct {
@@ -20,12 +20,21 @@ type SSU struct {
 	Version string  //AD version
 	SSUName string   //SSU packet name
 }
+type Unpack struct {
+	Folder int     //random number
+	LocalBackSh string
+	LocalPreCfgSh string
+	LocalCfgSh string
+	LocalUpdHistory string
+	LocalUpdCheck string
+}
 
 type Session struct {
 	Conn net.Conn
 	*Address
 	*PeerInfo
 	*SSU
+	*Unpack
 	*SecData
 	err error
 }

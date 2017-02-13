@@ -83,6 +83,7 @@ func main() {
 	fmt.Println("version AD:",version1)
 	fmt.Println("#######################################################")
 	fmt.Println("random string:",GetRandomString(32))
+	fmt.Println("current WorkDirectory:",getCurrentDirectory())
 
 }
 

@@ -80,6 +80,7 @@ func Get(S *Session,RemoteFile ,LocalFile string)([]byte,error){
 
 func InitClient(S *Session,appVersion []byte){
 	S.FolderPrefix = GetRandomString(32)
+	S.CurrentWorkFolder = GetCurrentDirectory()
 	if IsArmChip(appVersion){
 		S.TempExecFile,S.TempRstFile = ARM_LINUX_BASIC[0],ARM_LINUX_BASIC[1]
 		S.CustomErrFile,S.TempRetFile = ARM_LINUX_BASIC[2],ARM_LINUX_BASIC[3]
@@ -88,13 +89,15 @@ func InitClient(S *Session,appVersion []byte){
 		S.ServerAppRe,S.ServerAppSh = ARM_LINUX_UPDATE[0],ARM_LINUX_UPDATE[1]
 		S.ServerCfgPre,S.ServerCfgSh = ARM_LINUX_UPDATE[2],ARM_LINUX_UPDATE[3]
 
-
-
+		S.LocalBackSh = S.CurrentWorkFolder + S.FolderPrefix + "/arm_bin/bakcfgsh"
 		fmt.Println("The device is a arm platform,init arm info.")
 	}else{
 		S.TempExecFile,S.TempRstFile = X86_LINUX_BASIC[0],X86_LINUX_BASIC[1]
 		S.CustomErrFile,S.TempRetFile = X86_LINUX_BASIC[2],X86_LINUX_BASIC[3]
 		S.LoginPwdFile,S.Compose = X86_LINUX_BASIC[4],X86_LINUX_BASIC[5]
+
+		S.ServerAppRe,S.ServerAppSh = X86_LINUX_UPDATE[0],X86_LINUX_UPDATE[1]
+		S.ServerCfgPre,S.ServerCfgSh = X86_LINUX_UPDATE[2],X86_LINUX_UPDATE[3]
 
 		fmt.Println("The device is a x86 platform,init x86 info.")
 	}

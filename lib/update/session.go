@@ -23,6 +23,7 @@ type SSU struct {
 
 type Unpack struct {
 	FolderPrefix string     //random string
+	CurrentWorkFolder string
 	LocalBackSh string
 	LocalPreCfgSh string
 	LocalCfgSh string

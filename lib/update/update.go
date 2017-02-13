@@ -34,18 +34,18 @@ func Get(S *Session,RemoteFile ,LocalFile string)([]byte,error){
 	if !DoCmd(S,CMD[GET],RemoteFile){
 		return nil,fmt.Errorf("the server can't send the file:%s.check the file exists.\n",RemoteFile)
 	}
-	var alldata []byte
+	var allData []byte
 	S.ReadPacket()
-	alldata = S.data
+	allData = S.data
 	if S.typ == DATAFRAME{
 		S.ReadPacket()
-		alldata = append(alldata,S.data...)
+		allData = append(allData,S.data...)
 	}
 	if !IsGetOver(S){
 		return nil, fmt.Errorf("Not found getover flag while get the file:%s\n",RemoteFile)
 	}
 	if LocalFile == ""{
-		return alldata,nil
+		return allData,nil
 	}
 
 	err := ioutil.WriteFile(LocalFile, alldata, 0666)
@@ -87,12 +87,12 @@ func Login(S *Session,passwd string)(err error){
 		S.SerVersion = 300
 		fmt.Println("server version lower than v300. nothing to do.")
 	}
-	var appversion []byte
-	appversion,err = Get(S,APPVERSION_FILE,"")
+	var appVersion []byte
+	appVersion,err = Get(S,APPVERSION_FILE,"")
 	if err != nil{
 		return err
 	}
-	InitClient(S,appversion)
+	InitClient(S,appVersion)
 	fmt.Println("login success")
 	return nil
 }

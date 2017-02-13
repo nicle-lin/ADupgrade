@@ -20,13 +20,26 @@ type SSU struct {
 	Version string  //AD version
 	SSUName string   //SSU packet name
 }
+
 type Unpack struct {
-	Folder int     //random number
+	FolderPrefix string     //random string
 	LocalBackSh string
 	LocalPreCfgSh string
 	LocalCfgSh string
 	LocalUpdHistory string
 	LocalUpdCheck string
+	ServerAppRe string
+	ServerAppSh string
+	ServerCfgPre string
+	ServerCfgSh string
+	TempExecFile string
+	TempRstFile string
+	TempRetFile string
+	CustomErrFile string
+	LoginPwdFile string
+	Compose string
+
+
 }
 
 type Session struct {

@@ -22,11 +22,37 @@ func QueryVersion(S *Session)bool{
 	return strings.Contains(string(S.data),"result:7629414")
 }
 
-// Get the Server Version
+// Get the Server Version(updateme program version)
 func VersionResult(S *Session){
 	reg := regexp.MustCompile(`version:[\d]+`)
 	str := reg.FindAllString(string(S.data),-1)[0]
 	S.SerVersion = int(strings.Split(str,":")[1])
+}
+
+//Get AD Version
+func GetAppVersion(S *Session,appVersion []byte){
+	reg := regexp.MustCompile(`[\w]+-[\w]+\.[\w]+`)
+	str := reg.FindAllString(string(appVersion),-1)[0]
+	S.AppVersion = int(strings.Split(str,"-")[1])
+	fmt.Println("The first line of appversion of the current device is:",S.AppVersion)
+}
+
+func IsArmChip(appVersion []byte)bool{
+	str := strings.ToLower(string(appVersion))
+	if strings.Contains(str,"-ac-") || strings.Contains(str,"sinfor-m") || strings.Contains(str,"-ad-"){
+		return true
+	}
+	if strings.Contains(str,"-bm-") || strings.Contains(str,"-bc-") || strings.Contains(str,"-iam"){
+		return true
+	}
+
+	if strings.Contains(str,"-nag") || strings.Contains(str,"sinfor--") || strings.Contains(str,"sangfor--"){
+		return true
+	}
+	if strings.Contains(str,"ar") || strings.Contains(str,"xp") || strings.Contains(str,"plus"){
+		return false
+	}
+	return false
 }
 
 //Get file from Server, and download,write it to the LocalFile
@@ -52,8 +78,26 @@ func Get(S *Session,RemoteFile ,LocalFile string)([]byte,error){
 	return nil,err
 }
 
-func InitClient(S *Session,appversion []byte){
+func InitClient(S *Session,appVersion []byte){
+	S.FolderPrefix = GetRandomString(32)
+	if IsArmChip(appVersion){
+		S.TempExecFile,S.TempRstFile = ARM_LINUX_BASIC[0],ARM_LINUX_BASIC[1]
+		S.CustomErrFile,S.TempRetFile = ARM_LINUX_BASIC[2],ARM_LINUX_BASIC[3]
+		S.LoginPwdFile,S.Compose = ARM_LINUX_BASIC[4],ARM_LINUX_BASIC[5]
 
+		S.ServerAppRe,S.ServerAppSh = ARM_LINUX_UPDATE[0],ARM_LINUX_UPDATE[1]
+		S.ServerCfgPre,S.ServerCfgSh = ARM_LINUX_UPDATE[2],ARM_LINUX_UPDATE[3]
+
+
+
+		fmt.Println("The device is a arm platform,init arm info.")
+	}else{
+		S.TempExecFile,S.TempRstFile = X86_LINUX_BASIC[0],X86_LINUX_BASIC[1]
+		S.CustomErrFile,S.TempRetFile = X86_LINUX_BASIC[2],X86_LINUX_BASIC[3]
+		S.LoginPwdFile,S.Compose = X86_LINUX_BASIC[4],X86_LINUX_BASIC[5]
+
+		fmt.Println("The device is a x86 platform,init x86 info.")
+	}
 }
 
 //return true,it mean command execute success by peer
@@ -92,6 +136,7 @@ func Login(S *Session,passwd string)(err error){
 	if err != nil{
 		return err
 	}
+	GetAppVersion(S,appVersion)
 	InitClient(S,appVersion)
 	fmt.Println("login success")
 	return nil

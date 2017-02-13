@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 	"regexp"
+	"math/rand"
+	"path/filepath"
 )
 
 func main() {
@@ -56,7 +58,7 @@ func main() {
 		}(i)
 		//fmt.Println("okokiiii:",i)
 	}
-	time.Sleep(2*time.Second)
+	time.Sleep(1*time.Second)
 	fmt.Println("-----------------------------------------")
 	text := "\nverversion:450\n"
 	reg := regexp.MustCompile(`version:[\d]+`)
@@ -72,7 +74,38 @@ func main() {
 	all = one
 	all = append(all,two...)
 	fmt.Println("all:",all)
+	fmt.Println("######################################################")
+	text1 := "\nSANGFOR-M5400-AD-5.4R1\nBUILD20160830"
+	reg1 := regexp.MustCompile(`[\w]+-[\w]+\.[\w]+`)
+	//fmt.Printf("%q\n",reg1.FindAllString(text1,-1))
+	str1 := reg1.FindAllString(text1,-1)[0]
+	version1 := strings.Split(str1,"-")[1]
+	fmt.Println("version AD:",version1)
+	fmt.Println("#######################################################")
+	fmt.Println("random string:",GetRandomString(32))
+
 }
+
+//生成随机字符串
+func GetRandomString(length int) string{
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < length; i++ {
+		result = append(result, bytes[r.Intn(len(bytes))])
+	}
+	return string(result)
+}
+
+func getCurrentDirectory() string {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return strings.Replace(dir, "\\", "/", -1)
+}
+
 
 type Name struct {
 	i int

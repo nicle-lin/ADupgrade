@@ -151,7 +151,7 @@ func Exec(S *Session,Command string)(string,error){
 
 func Put(S *Session, RemoteFile,LocalFile string)error{
 	if !DoCmd(S,CMD[PUT],RemoteFile){
-		return fmt.Errorf("DoCmd fail, put %s fail",RemoteFile)
+		return fmt.Errorf("DoCmd fail, put %s fail\n",RemoteFile)
 	}
 	file ,err := os.Open(LocalFile)
 	if err != nil{
@@ -164,20 +164,25 @@ func Put(S *Session, RemoteFile,LocalFile string)error{
 
 	for{
 		n,err1 := bufRead.Read(buf)
-		data,_ := MakeDataPacket(buf[:n])
-		S.WritePacket(data)
-		if err1 != nil{
-			if err1 == io.EOF{
-				break
-			}
+		if err1 != nil && err1 != io.EOF{
 			return err1
 		}
+		if 0 == n {break}
+		data,_ := MakeDataPacket(buf[:n])
+		S.WritePacket(data)
+
+
 	}
-	//TODO: send putover
+	if !DoCmd(S,CMD[PUTOVER],""){
+		return fmt.Errorf("DoCmd fail, PUTOVER fail\n")
+	}
+	return nil
 }
 
 
-func Login(S *Session,passwd string)(err error){
+func Login(S *Session,ip,port,passwd string)(err error){
+	S.IP = ip
+	S.Port = port
 	S.Conn, err = net.Dial("tcp4", S.IP+":"+S.Port)
 	if err != nil {
 		return err
@@ -209,17 +214,32 @@ func Logout(S *Session) error{
 	return S.Conn.Close()
 }
 
-func UpgradeCheck(S *Session){
-	result, err := Exec(S,"ls " + UPDATE_CHECK_SCRIPT)
+func UpgradeCheck(S *Session)error{
+	_, err := Exec(S,"ls " + UPDATE_CHECK_SCRIPT)
 	if err != nil{
 		Put(S,S.LocalUpdCheck,UPDATE_CHECK_SCRIPT)
 	}
+	//execute /usr/sbin/updatercheck.sh, check it pass or fail
+	msgVersion,resultVersion := Exec(S,UPDATE_CHECK_SCRIPT)
+	if resultVersion != nil{
+		return fmt.Errorf("Upgrade failed!!!,error msg:%s",msgVersion)
+	}
+
+	//check upgrade sn valid or invalid
+	msgSn,resultSn := Exec(S,CHECK_UPGRADE_SN)
+	if resultSn != nil{
+		return fmt.Errorf("Upgrade failed!!!,error msg:%s",msgSn)
+	}
+	return nil
 }
 
 func Upgrade(ip,port,password,ssu string){
-
+	S := new(Session)
+	Login(S,ip,port,password)
+	err := UpgradeCheck(S)
+	if err != nil {return err }
 }
 
-func ThreadUpgrade(){
+func ThreadUpgrade(ip []string,port []string,passwd []string,ssu []string){
 
 }

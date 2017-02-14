@@ -2,6 +2,8 @@ package update
 
 import (
 	"sync"
+	"fmt"
+	"time"
 )
 
 var Flag uint16
@@ -34,7 +36,7 @@ func DecFlag(){
 
 //相同的版本的SSU只能解压一次,在没有解压完成之前其它goroute只能等待解压完成，需要channel来通信
 var once sync.Once
-func (S *Session)unpackSSU(name string){
+func (S *Session)unpackSSU(ssu string){
 
 }
 
@@ -50,4 +52,13 @@ func UnpackSSU(){
 
 
 	IncFlag()
+}
+
+
+func PrepareUpgrade(S *Session,ssu string)error{
+	fmt.Println("init to upgrade or restore  the package:%s",ssu)
+	if S.UpdatingFlag && ((time.Now() - S.UpdateTime) < UPD_TIMEOUT){
+		fmt.Errorf("now update the package:%s,begin at %t ....")
+	}
+
 }

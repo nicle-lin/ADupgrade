@@ -3,6 +3,7 @@ package update
 import (
 	"net"
 	"fmt"
+	"time"
 )
 
 type Address struct {
@@ -39,7 +40,11 @@ type Unpack struct {
 	CustomErrFile string
 	LoginPwdFile string
 	Compose string
+}
 
+type Package struct {
+	UpdatingFlag bool   //updating or not
+	UpdateTime time.Time  //when to update
 
 }
 
@@ -48,6 +53,7 @@ type Session struct {
 	*Address
 	*PeerInfo
 	*SSU
+	*Package
 	*Unpack
 	*SecData
 	err error

@@ -89,7 +89,13 @@ func InitClient(S *Session,appVersion []byte){
 		S.ServerAppRe,S.ServerAppSh = ARM_LINUX_UPDATE[0],ARM_LINUX_UPDATE[1]
 		S.ServerCfgPre,S.ServerCfgSh = ARM_LINUX_UPDATE[2],ARM_LINUX_UPDATE[3]
 
-		S.LocalBackSh = S.CurrentWorkFolder + S.FolderPrefix + "/arm_bin/bakcfgsh"
+		S.LocalBackSh = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/arm_bin/bakcfgsh"
+		S.LocalPreCfgSh = S.CurrentWorkFolder + "/" +  S.FolderPrefix + "/arm_bin/prercovcfgsh"
+		S.LocalCfgSh = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/arm_bin/rcovcfgsh"
+		S.LocalUpdHistory = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/arm_bin/updhistory.sh"
+		S.LocalUpdCheck = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/arm_bin/updatercheck.sh"
+
+
 		fmt.Println("The device is a arm platform,init arm info.")
 	}else{
 		S.TempExecFile,S.TempRstFile = X86_LINUX_BASIC[0],X86_LINUX_BASIC[1]
@@ -98,6 +104,13 @@ func InitClient(S *Session,appVersion []byte){
 
 		S.ServerAppRe,S.ServerAppSh = X86_LINUX_UPDATE[0],X86_LINUX_UPDATE[1]
 		S.ServerCfgPre,S.ServerCfgSh = X86_LINUX_UPDATE[2],X86_LINUX_UPDATE[3]
+
+
+		S.LocalBackSh = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/bin/bakcfgsh"
+		S.LocalPreCfgSh = S.CurrentWorkFolder + "/" +  S.FolderPrefix + "/bin/prercovcfgsh"
+		S.LocalCfgSh = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/bin/rcovcfgsh"
+		S.LocalUpdHistory = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/bin/updhistory.sh"
+		S.LocalUpdCheck = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/bin/updatercheck.sh"
 
 		fmt.Println("The device is a x86 platform,init x86 info.")
 	}
@@ -147,4 +160,13 @@ func Login(S *Session,passwd string)(err error){
 
 func Logout(S *Session) error{
 	return S.Conn.Close()
+}
+
+
+func Upgrade(){
+	
+}
+
+func ThreadUpgrade(){
+
 }

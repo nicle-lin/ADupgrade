@@ -130,6 +130,22 @@ func DoCmd(S *Session, cmdType, params string) bool{
 
 }
 
+func Exec(S *Session,Command string)(string,error){
+	doRet := DoCmd(S,CMD[EXEC],Command)
+	getReturn,err := Get(S,S.TempRetFile,"")
+	if err != nil {
+		return nil,err
+	}
+	getResult,err1 := Get(S,S.TempRstFile,"")
+	if err1 != nil {
+		return nil,err1
+	}
+	if strings.TrimSpace(string(getReturn)) != "0" || !doRet{
+		return nil,fmt.Errorf("DoCmd error or return result is 0\n")
+	}
+	return string(getResult),nil
+}
+
 func Login(S *Session,passwd string)(err error){
 	S.Conn, err = net.Dial("tcp4", S.IP+":"+S.Port)
 	if err != nil {
@@ -162,9 +178,13 @@ func Logout(S *Session) error{
 	return S.Conn.Close()
 }
 
-
-func Upgrade(){
+func UpgradeCheck(S *Session){
+	result, err := Exec(S,"ls " + UPDATE_CHECK_SCRIPT)
 	
+}
+
+func Upgrade(ip,port,password,ssu string){
+
 }
 
 func ThreadUpgrade(){

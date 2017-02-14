@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"math/rand"
 	"path/filepath"
+	"runtime"
 )
 
 func main() {
@@ -104,6 +105,7 @@ func getCurrentDirectory() string {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("OS:",runtime.GOOS)
 	return strings.Replace(dir, "\\", "/", -1)
 }
 

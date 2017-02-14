@@ -6,6 +6,9 @@ import (
 	"strings"
 	"regexp"
 	"io/ioutil"
+	"os"
+	"bufio"
+	"io"
 )
 
 //if S.data contains string "result:1",it means command executed fail by AD
@@ -146,6 +149,34 @@ func Exec(S *Session,Command string)(string,error){
 	return string(getResult),nil
 }
 
+func Put(S *Session, RemoteFile,LocalFile string)error{
+	if !DoCmd(S,CMD[PUT],RemoteFile){
+		return fmt.Errorf("DoCmd fail, put %s fail",RemoteFile)
+	}
+	file ,err := os.Open(LocalFile)
+	if err != nil{
+		return  err
+	}
+	defer file.Close()
+
+	buf := make([]byte,MAX_DATA_LEN)
+	bufRead := bufio.NewReader(file)
+
+	for{
+		n,err1 := bufRead.Read(buf)
+		data,_ := MakeDataPacket(buf[:n])
+		S.WritePacket(data)
+		if err1 != nil{
+			if err1 == io.EOF{
+				break
+			}
+			return err1
+		}
+	}
+	//TODO: send putover
+}
+
+
 func Login(S *Session,passwd string)(err error){
 	S.Conn, err = net.Dial("tcp4", S.IP+":"+S.Port)
 	if err != nil {
@@ -180,7 +211,9 @@ func Logout(S *Session) error{
 
 func UpgradeCheck(S *Session){
 	result, err := Exec(S,"ls " + UPDATE_CHECK_SCRIPT)
-	
+	if err != nil{
+		Put(S,S.LocalUpdCheck,UPDATE_CHECK_SCRIPT)
+	}
 }
 
 func Upgrade(ip,port,password,ssu string){

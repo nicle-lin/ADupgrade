@@ -179,6 +179,14 @@ func Put(S *Session, RemoteFile,LocalFile string)error{
 	return nil
 }
 
+func PutFile(ip,passwd,port,LocalFile,RemoteFile,string){
+
+}
+
+func GetFile(ip,passwd,port,LocalFile,RemoteFile,string){
+	
+}
+
 
 func Login(S *Session,ip,port,passwd string)(err error){
 	S.IP = ip

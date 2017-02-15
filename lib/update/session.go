@@ -50,19 +50,18 @@ type Package struct {
 
 type Session struct {
 	Conn net.Conn
-	*Address
 	*PeerInfo
+	*SecData
+}
+
+type Update struct {
 	*SSU
 	*Package
 	*Unpack
-	*SecData
-	err error
 }
 
-
-
 //read data from peer and decrypt data, and return data
-func (S *Session)ReadPacket(){
+func (S *Session)ReadPacket()error{
 	frameHeaderBuf := make([]byte,FRAME_HEADER_LEN)
 	var n int
 	var err error
@@ -70,7 +69,7 @@ func (S *Session)ReadPacket(){
 	if n != FRAME_HEADER_LEN || err != nil{
 		fmt.Println("read frame len > Max frame len")
 		//return nil, fmt.Errorf("frame len is wrong:#%#v\n",n)
-		S.err = fmt.Errorf("frame len is wrong:#%#v\n",n)
+		return  fmt.Errorf("frame len is wrong:#%#v\n",n)
 	}
 	frameHeader := NewLEStream(frameHeaderBuf)
 	frameFlag,_ := frameHeader.ReadUint16()
@@ -78,12 +77,12 @@ func (S *Session)ReadPacket(){
 	if frameFlag != FRAMEFLAG{
 		fmt.Printf("frameflage is wrong:0x%x",frameFlag)
 		//return nil, fmt.Errorf("frameflage is wrong:#%#v\n",frameFlag)
-		S.err = fmt.Errorf("frameflage is wrong:#%#v\n",frameFlag)
+		return fmt.Errorf("frameflage is wrong:#%#v\n",frameFlag)
 	}
 
 	if secDataLen > MAX_DATA_LEN{
 		//return nil, fmt.Errorf("sec data len is wrong:#%#v\n",secDataLen)
-		S.err = fmt.Errorf("sec data len is wrong:#%#v\n",secDataLen)
+		return fmt.Errorf("sec data len is wrong:#%#v\n",secDataLen)
 	}
 
 	encSecData := make([]byte,secDataLen)
@@ -97,7 +96,7 @@ func (S *Session)ReadPacket(){
 	if err != nil{
 		fmt.Println("dec sec data error:",err)
 		//return nil,fmt.Errorf("dec sec data error:\n",err)
-		S.err = fmt.Errorf("dec sec data error:\n",err)
+		return fmt.Errorf("dec sec data error:\n",err)
 	}
 
 	secDataHeader := NewLEStream(decSecData)
@@ -105,7 +104,7 @@ func (S *Session)ReadPacket(){
 	if secDataFlag != FRAMEFLAG{
 		fmt.Printf("sec Data flag is wrong:0x%x\n",secDataFlag)
 		//return nil,fmt.Errorf("sec Data flag is wrong:0x%x\n",secDataFlag)
-		S.err = fmt.Errorf("sec Data flag is wrong:0x%x\n",secDataFlag)
+		return fmt.Errorf("sec Data flag is wrong:0x%x\n",secDataFlag)
 	}
 	dataLen, _ := secDataHeader.ReadUint16()
 	secDataType, _ := secDataHeader.ReadByte()
@@ -113,17 +112,17 @@ func (S *Session)ReadPacket(){
 	if dataLen != realDataLen{
 		fmt.Printf("sec Data len is wrong:0x%x\n",dataLen,"receive data len:ox%x\n",realDataLen)
 		//return nil, fmt.Errorf("sec Data len is wrong:0x%x\n",dataLen,"receive data len:ox%x\n",realDataLen)
-		S.err = fmt.Errorf("sec Data len is wrong:0x%x\n",dataLen,"receive data len:ox%x\n",realDataLen)
+		return fmt.Errorf("sec Data len is wrong:0x%x\n",dataLen,"receive data len:ox%x\n",realDataLen)
 	}
 	if secDataType != CMDFRAME && secDataType != DATAFRAME{
 		fmt.Printf("sec data type is wrong:0x%x\n",secDataType)
 		//return nil, fmt.Errorf("sec data type is wrong:0x%x\n",secDataType)
-		S.err = fmt.Errorf("sec data type is wrong:0x%x\n",secDataType)
+		return fmt.Errorf("sec data type is wrong:0x%x\n",secDataType)
 	}
 	S.typ = secDataType
 	S.length = secDataLen
-	//return decSecData[secDataHeader.pos:],nil
 	S.data = decSecData[secDataHeader.pos:]
+	return nil
 }
 
 

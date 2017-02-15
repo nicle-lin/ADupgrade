@@ -36,7 +36,7 @@ func VersionResult(S *Session){
 func GetAppVersion(S *Session,appVersion []byte){
 	reg := regexp.MustCompile(`[\w]+-[\w]+\.[\w]+`)
 	str := reg.FindAllString(string(appVersion),-1)[0]
-	S.AppVersion = int(strings.Split(str,"-")[1])
+	S.AppVersion = strings.Split(str,"-")[1]
 	fmt.Println("The first line of appversion of the current device is:",S.AppVersion)
 }
 
@@ -81,39 +81,40 @@ func Get(S *Session,RemoteFile ,LocalFile string)([]byte,error){
 	return nil,err
 }
 
-func InitClient(S *Session,appVersion []byte){
-	S.FolderPrefix = GetRandomString(32)
-	S.CurrentWorkFolder = GetCurrentDirectory()
+func InitClient(appVersion []byte)*Update{
+	U := new(Update)
+	U.FolderPrefix = GetRandomString(32)
+	U.CurrentWorkFolder = GetCurrentDirectory()
 	if IsArmChip(appVersion){
-		S.TempExecFile,S.TempRstFile = ARM_LINUX_BASIC[0],ARM_LINUX_BASIC[1]
-		S.CustomErrFile,S.TempRetFile = ARM_LINUX_BASIC[2],ARM_LINUX_BASIC[3]
-		S.LoginPwdFile,S.Compose = ARM_LINUX_BASIC[4],ARM_LINUX_BASIC[5]
+		U.TempExecFile,U.TempRstFile = ARM_LINUX_BASIC[0],ARM_LINUX_BASIC[1]
+		U.CustomErrFile,U.TempRetFile = ARM_LINUX_BASIC[2],ARM_LINUX_BASIC[3]
+		U.LoginPwdFile,U.Compose = ARM_LINUX_BASIC[4],ARM_LINUX_BASIC[5]
 
-		S.ServerAppRe,S.ServerAppSh = ARM_LINUX_UPDATE[0],ARM_LINUX_UPDATE[1]
-		S.ServerCfgPre,S.ServerCfgSh = ARM_LINUX_UPDATE[2],ARM_LINUX_UPDATE[3]
+		U.ServerAppRe,U.ServerAppSh = ARM_LINUX_UPDATE[0],ARM_LINUX_UPDATE[1]
+		U.ServerCfgPre,U.ServerCfgSh = ARM_LINUX_UPDATE[2],ARM_LINUX_UPDATE[3]
 
-		S.LocalBackSh = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/arm_bin/bakcfgsh"
-		S.LocalPreCfgSh = S.CurrentWorkFolder + "/" +  S.FolderPrefix + "/arm_bin/prercovcfgsh"
-		S.LocalCfgSh = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/arm_bin/rcovcfgsh"
-		S.LocalUpdHistory = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/arm_bin/updhistory.sh"
-		S.LocalUpdCheck = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/arm_bin/updatercheck.sh"
+		U.LocalBackSh = U.CurrentWorkFolder + "/" + U.FolderPrefix + "/arm_bin/bakcfgsh"
+		U.LocalPreCfgSh = U.CurrentWorkFolder + "/" +  U.FolderPrefix + "/arm_bin/prercovcfgsh"
+		U.LocalCfgSh = U.CurrentWorkFolder + "/" + U.FolderPrefix + "/arm_bin/rcovcfgsh"
+		U.LocalUpdHistory = U.CurrentWorkFolder + "/" + U.FolderPrefix + "/arm_bin/updhistory.sh"
+		U.LocalUpdCheck = U.CurrentWorkFolder + "/" + U.FolderPrefix + "/arm_bin/updatercheck.sh"
 
 
 		fmt.Println("The device is a arm platform,init arm info.")
 	}else{
-		S.TempExecFile,S.TempRstFile = X86_LINUX_BASIC[0],X86_LINUX_BASIC[1]
-		S.CustomErrFile,S.TempRetFile = X86_LINUX_BASIC[2],X86_LINUX_BASIC[3]
-		S.LoginPwdFile,S.Compose = X86_LINUX_BASIC[4],X86_LINUX_BASIC[5]
+		U.TempExecFile,U.TempRstFile = X86_LINUX_BASIC[0],X86_LINUX_BASIC[1]
+		U.CustomErrFile,U.TempRetFile = X86_LINUX_BASIC[2],X86_LINUX_BASIC[3]
+		U.LoginPwdFile,U.Compose = X86_LINUX_BASIC[4],X86_LINUX_BASIC[5]
 
-		S.ServerAppRe,S.ServerAppSh = X86_LINUX_UPDATE[0],X86_LINUX_UPDATE[1]
-		S.ServerCfgPre,S.ServerCfgSh = X86_LINUX_UPDATE[2],X86_LINUX_UPDATE[3]
+		U.ServerAppRe,U.ServerAppSh = X86_LINUX_UPDATE[0],X86_LINUX_UPDATE[1]
+		U.ServerCfgPre,U.ServerCfgSh = X86_LINUX_UPDATE[2],X86_LINUX_UPDATE[3]
 
 
-		S.LocalBackSh = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/bin/bakcfgsh"
-		S.LocalPreCfgSh = S.CurrentWorkFolder + "/" +  S.FolderPrefix + "/bin/prercovcfgsh"
-		S.LocalCfgSh = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/bin/rcovcfgsh"
-		S.LocalUpdHistory = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/bin/updhistory.sh"
-		S.LocalUpdCheck = S.CurrentWorkFolder + "/" + S.FolderPrefix + "/bin/updatercheck.sh"
+		U.LocalBackSh = U.CurrentWorkFolder + "/" + U.FolderPrefix + "/bin/bakcfgsh"
+		U.LocalPreCfgSh = U.CurrentWorkFolder + "/" +  U.FolderPrefix + "/bin/prercovcfgsh"
+		U.LocalCfgSh = U.CurrentWorkFolder + "/" + U.FolderPrefix + "/bin/rcovcfgsh"
+		U.LocalUpdHistory = U.CurrentWorkFolder + "/" + U.FolderPrefix + "/bin/updhistory.sh"
+		U.LocalUpdCheck = U.CurrentWorkFolder + "/" + U.FolderPrefix + "/bin/updatercheck.sh"
 
 		fmt.Println("The device is a x86 platform,init x86 info.")
 	}
@@ -121,15 +122,25 @@ func InitClient(S *Session,appVersion []byte){
 
 //return true,it mean command execute success by peer
 //return false, it mean command execute fail by peer
-func DoCmd(S *Session, cmdType, params string) bool{
+func DoCmd(S *Session, cmdType, params string) error{
 	cmdStr, err := MakeCmdPacket(cmdType,params)
 	if err != nil{
 		fmt.Errorf("MakeCmdPacket error:",err)
 		return
 	}
-	S.err = S.WritePacket(cmdStr)
-	S.ReadPacket()
-	return IsResultOK(S)
+	err = S.WritePacket(cmdStr)
+	if err != nil {
+		return err
+	}
+	err = S.ReadPacket()
+	if err != nil {
+		return err
+	}
+	if IsResultOK(S){
+		return nil
+	}else{
+		return fmt.Errorf("result is not ok")
+	}
 
 }
 
@@ -149,7 +160,7 @@ func Exec(S *Session,Command string)(string,error){
 	return string(getResult),nil
 }
 
-func Put(S *Session, RemoteFile,LocalFile string)error{
+func Put(S *Session,LocalFile,RemoteFile string)error{
 	if !DoCmd(S,CMD[PUT],RemoteFile){
 		return fmt.Errorf("DoCmd fail, put %s fail\n",RemoteFile)
 	}
@@ -179,53 +190,61 @@ func Put(S *Session, RemoteFile,LocalFile string)error{
 	return nil
 }
 
-func PutFile(ip,passwd,port,LocalFile,RemoteFile,string){
-
+func PutFile(ip,port,passwd,LocalFile,RemoteFile string)error{
+	_,err := os.Stat(LocalFile)
+	if err != nil || os.IsNotExist(err) {
+		return err
+	}
+	S, loginErr := Login(ip,port,passwd)
+	if loginErr != nil{
+		return loginErr
+	}
+	defer Logout(S)
+	return Put(S,LocalFile,RemoteFile)
 }
 
-func GetFile(ip,passwd,port,LocalFile,RemoteFile,string){
-
+func GetFile(ip,passwd,port,LocalFile,RemoteFile string)error{
+	S, loginErr := Login(ip,port,passwd)
+	if loginErr != nil{
+		return loginErr
+	}
+	defer Logout(S)
+	_,err := Get(S,RemoteFile,LocalFile)
+	return err
 }
 
 //TODO: chang it to return a Session
-func Login(S *Session,ip,port,passwd string)(err error){
-	S.IP = ip
-	S.Port = port
-	S.Conn, err = net.Dial("tcp4", S.IP+":"+S.Port)
+func Login(ip,port,passwd string)(*Session,error){
+	conn, err := net.Dial("tcp4", ip+":"+port)
 	if err != nil {
-		return err
+		return nil,err
 	}
+	S := new(Session)
+	S.Conn = conn
 	if !DoCmd(S,CMD[LOGIN],passwd){
 		return fmt.Errorf("Login fail,please check the passwd\n")
 	}
 	if QueryVersion(S){
 		if !DoCmd(S,CMD[VERSION],"") {
-			return fmt.Errorf("DoCmd %s fail\n",CMD[VERSION])
+			return nil,fmt.Errorf("DoCmd %s fail\n",CMD[VERSION])
 		}
 		VersionResult(S)
 	}else{
 		S.SerVersion = 300
 		fmt.Println("server version lower than v300. nothing to do.")
 	}
-	var appVersion []byte
-	appVersion,err = Get(S,APPVERSION_FILE,"")
-	if err != nil{
-		return err
-	}
-	GetAppVersion(S,appVersion)
-	InitClient(S,appVersion)
 	fmt.Println("login success")
-	return nil
+	return S,nil
 }
 
 func Logout(S *Session) error{
 	return S.Conn.Close()
 }
 
-func UpgradeCheck(S *Session)error{
+func UpgradeCheck(S *Session,U *Update)error{
 	_, err := Exec(S,"ls " + UPDATE_CHECK_SCRIPT)
 	if err != nil{
-		Put(S,S.LocalUpdCheck,UPDATE_CHECK_SCRIPT)
+		Put(S,U.LocalUpdCheck,UPDATE_CHECK_SCRIPT)
 	}
 	//execute /usr/sbin/updatercheck.sh, check it pass or fail
 	msgVersion,resultVersion := Exec(S,UPDATE_CHECK_SCRIPT)
@@ -241,11 +260,26 @@ func UpgradeCheck(S *Session)error{
 	return nil
 }
 
-func Upgrade(ip,port,password,ssu string){
-	S := new(Session)
-	Login(S,ip,port,password)
-	err := UpgradeCheck(S)
-	if err != nil {return err }
+
+func Upgrade(ip,port,password,ssu string)error{
+
+	S, err := Login(ip,port,password)
+	if err != nil {
+		return err
+	}
+	var appVersion []byte
+	appVersion,err = Get(S,APPVERSION_FILE,"")
+	if err != nil{
+		return err
+	}
+	GetAppVersion(S,appVersion)
+
+	U := InitClient(appVersion)
+
+	err = UpgradeCheck(S,U)
+	if err != nil {
+		return err
+	}
 }
 
 func ThreadUpgrade(ip []string,port []string,passwd []string,ssu []string){

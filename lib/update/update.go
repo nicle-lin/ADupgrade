@@ -184,10 +184,10 @@ func PutFile(ip,passwd,port,LocalFile,RemoteFile,string){
 }
 
 func GetFile(ip,passwd,port,LocalFile,RemoteFile,string){
-	
+
 }
 
-
+//TODO: chang it to return a Session
 func Login(S *Session,ip,port,passwd string)(err error){
 	S.IP = ip
 	S.Port = port

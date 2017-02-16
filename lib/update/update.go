@@ -118,6 +118,7 @@ func InitClient(appVersion []byte)*Update{
 
 		fmt.Println("The device is a x86 platform,init x86 info.")
 	}
+	return U
 }
 
 //return true,it mean command execute success by peer
@@ -144,24 +145,24 @@ func DoCmd(S *Session, cmdType, params string) error{
 
 }
 
-func Exec(S *Session,Command string)(string,error){
+func Exec(S *Session,U *Update,Command string)(string,error){
 	doRet := DoCmd(S,CMD[EXEC],Command)
-	getReturn,err := Get(S,S.TempRetFile,"")
+	getReturn,err := Get(S,U.TempRetFile,"")
 	if err != nil {
 		return nil,err
 	}
-	getResult,err1 := Get(S,S.TempRstFile,"")
+	getResult,err1 := Get(S,U.TempRstFile,"")
 	if err1 != nil {
 		return nil,err1
 	}
-	if strings.TrimSpace(string(getReturn)) != "0" || !doRet{
+	if strings.TrimSpace(string(getReturn)) != "0" || doRet != nil {
 		return nil,fmt.Errorf("DoCmd error or return result is 0\n")
 	}
 	return string(getResult),nil
 }
 
 func Put(S *Session,LocalFile,RemoteFile string)error{
-	if !DoCmd(S,CMD[PUT],RemoteFile){
+	if DoCmd(S,CMD[PUT],RemoteFile) != nil {
 		return fmt.Errorf("DoCmd fail, put %s fail\n",RemoteFile)
 	}
 	file ,err := os.Open(LocalFile)
@@ -184,7 +185,7 @@ func Put(S *Session,LocalFile,RemoteFile string)error{
 
 
 	}
-	if !DoCmd(S,CMD[PUTOVER],""){
+	if DoCmd(S,CMD[PUTOVER],"") != nil {
 		return fmt.Errorf("DoCmd fail, PUTOVER fail\n")
 	}
 	return nil
@@ -213,9 +214,9 @@ func GetFile(ip,passwd,port,LocalFile,RemoteFile string)error{
 	return err
 }
 
-//TODO: chang it to return a Session
+
 func Login(ip,port,passwd string)(*Session,error){
-	conn, err := net.Dial("tcp4", ip+":"+port)
+	conn, err := net.Dial("tcp4", ip +":"+ port)
 	if err != nil {
 		return nil,err
 	}
@@ -242,18 +243,18 @@ func Logout(S *Session) error{
 }
 
 func UpgradeCheck(S *Session,U *Update)error{
-	_, err := Exec(S,"ls " + UPDATE_CHECK_SCRIPT)
+	_, err := Exec(S,U,"ls " + UPDATE_CHECK_SCRIPT)
 	if err != nil{
 		Put(S,U.LocalUpdCheck,UPDATE_CHECK_SCRIPT)
 	}
 	//execute /usr/sbin/updatercheck.sh, check it pass or fail
-	msgVersion,resultVersion := Exec(S,UPDATE_CHECK_SCRIPT)
+	msgVersion,resultVersion := Exec(S,U,UPDATE_CHECK_SCRIPT)
 	if resultVersion != nil{
 		return fmt.Errorf("Upgrade failed!!!,error msg:%s",msgVersion)
 	}
 
 	//check upgrade sn valid or invalid
-	msgSn,resultSn := Exec(S,CHECK_UPGRADE_SN)
+	msgSn,resultSn := Exec(S,U,CHECK_UPGRADE_SN)
 	if resultSn != nil{
 		return fmt.Errorf("Upgrade failed!!!,error msg:%s",msgSn)
 	}
@@ -275,11 +276,15 @@ func Upgrade(ip,port,password,ssu string)error{
 	GetAppVersion(S,appVersion)
 
 	U := InitClient(appVersion)
-
+	U.SSUPackage = ssu
 	err = UpgradeCheck(S,U)
 	if err != nil {
 		return err
 	}
+	if PrepareUpgrade(S,U) != nil {
+		return err
+	}
+	return nil
 }
 
 func ThreadUpgrade(ip []string,port []string,passwd []string,ssu []string){

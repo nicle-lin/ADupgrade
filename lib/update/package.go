@@ -53,12 +53,29 @@ func UnpackSSU(){
 
 	IncFlag()
 }
+func InitDirectory(U *Update)error {
+	
+
+	return nil
+}
+
+func InitEnviroment(U *Update)error {
+	fmt.Println("now init enviroment for update or restore")
+	U.SingleUnpkg = U.CurrentWorkFolder + "/" + U.FolderPrefix + "/unpkg/"
+	U.ComposeUnpkg = U.CurrentWorkFolder + "/" +  U.FolderPrefix + "/compose_unpkg/"
+	U.PkgTemp = U.CurrentWorkFolder + "/" + U.FolderPrefix + "/pkg_tmp/"
+	U.Download = U.CurrentWorkFolder + "/" +  U.FolderPrefix + "/download/"
+	U.AutoBak = U.CurrentWorkFolder + "/" + U.FolderPrefix + "/autobak/"
+	return InitDirectory(U)
+}
 
 
-func PrepareUpgrade(S *Session,ssu string)error{
-	fmt.Println("init to upgrade or restore  the package:%s",ssu)
-	if S.UpdatingFlag && ((time.Now() - S.UpdateTime) < UPD_TIMEOUT){
+func PrepareUpgrade(S *Session,U *Update)error{
+	fmt.Println("init to upgrade or restore  the package:%s",U.SSUPackage)
+	if U.UpdatingFlag && ((time.Now() - U.UpdateTime) < UPD_TIMEOUT){
 		fmt.Errorf("now update the package:%s,begin at %t ....")
 	}
 
+
+	return nil
 }

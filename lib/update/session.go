@@ -19,7 +19,7 @@ type PeerInfo struct{
 type SSU struct {
 	Flag bool     //Same Version SSU packet has been unpack or not
 	Version string  //AD version
-	SSUName string   //SSU packet name
+	SSUPackage string   //SSU packet name
 }
 
 type Unpack struct {
@@ -40,7 +40,15 @@ type Unpack struct {
 	CustomErrFile string
 	LoginPwdFile string
 	Compose string
+
+	SingleUnpkg string
+	ComposeUnpkg string
+	PkgTemp string
+	Download string
+	AutoBak string
 }
+
+
 
 type Package struct {
 	UpdatingFlag bool   //updating or not

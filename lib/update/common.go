@@ -128,3 +128,8 @@ func GetCurrentDirectory() string {
 	}
 	return strings.Replace(dir, "\\", "/", -1)
 }
+
+
+func FtpDownloadSSUPackage() {
+
+}

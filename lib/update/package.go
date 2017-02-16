@@ -4,6 +4,8 @@ import (
 	"sync"
 	"fmt"
 	"time"
+	"path/filepath"
+	"os"
 )
 
 var Flag uint16
@@ -54,7 +56,7 @@ func UnpackSSU(){
 	IncFlag()
 }
 func InitDirectory(U *Update)error {
-	
+	os.Mkdir()
 
 	return nil
 }

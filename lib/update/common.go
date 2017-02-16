@@ -129,7 +129,16 @@ func GetCurrentDirectory() string {
 	return strings.Replace(dir, "\\", "/", -1)
 }
 
+//judge file or directory is exist or not
+func IsPathExist(path string)bool{
+	_,err := os.Stat(path)
+	if err != nil || os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
 
 func FtpDownloadSSUPackage() {
 
 }
+

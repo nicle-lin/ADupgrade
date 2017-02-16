@@ -192,9 +192,8 @@ func Put(S *Session,LocalFile,RemoteFile string)error{
 }
 
 func PutFile(ip,port,passwd,LocalFile,RemoteFile string)error{
-	_,err := os.Stat(LocalFile)
-	if err != nil || os.IsNotExist(err) {
-		return err
+	if !IsPathExist(LocalFile){
+		return fmt.Errorf("%s don't exist",LocalFile)
 	}
 	S, loginErr := Login(ip,port,passwd)
 	if loginErr != nil{

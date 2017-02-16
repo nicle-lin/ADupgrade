@@ -46,13 +46,13 @@ type LEStream struct {
 
 func NewBEStream(buff []byte) *BEStream {
 	return &BEStream{
-		buff:buff,
+		buff: buff,
 	}
 }
 
 func NewLEStream(buff []byte) *LEStream {
 	return &LEStream{
-		buff:buff,
+		buff: buff,
 	}
 }
 
@@ -269,4 +269,3 @@ func (impl *LEStream) WriteBuff(buff []byte) error {
 	impl.pos += len(buff)
 	return nil
 }
-

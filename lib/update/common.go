@@ -1,14 +1,14 @@
 package update
 
 import (
-	"time"
-	"math/rand"
-	"path/filepath"
-	"os"
-	"strings"
 	"fmt"
+	"math/rand"
+	"os"
+	"path/filepath"
+	"strings"
+	"syscall"
+	"time"
 )
-
 
 /*
 
@@ -76,40 +76,39 @@ import (
   EXECUTE_TYPE = 3
   AUTOBAK_NUMS = 10
 
- */
-
+*/
 
 var (
-	EXEC_TIMEOUT = 60
-	UPD_TIMEOUT = 1800
-	CONN_TIMEOUT = 120
+	EXEC_TIMEOUT    = 60
+	UPD_TIMEOUT     = 1800
+	CONN_TIMEOUT    = 120
 	APPVERSION_FILE = "/app/appversion"
-	CATMAC = "cat /usr/sbin/macaddr"
-	ARM_LINUX_BASIC = [6]string{"/var/dlancmd/tempexec","/var/dlancmd/result","/var/upd_sh_err.log","/var/dlancmd/return","/etc/config/passwd","/var/dlancmd/compose.sh" }
+	CATMAC          = "cat /usr/sbin/macaddr"
+	ARM_LINUX_BASIC = [6]string{"/var/dlancmd/tempexec", "/var/dlancmd/result", "/var/upd_sh_err.log", "/var/dlancmd/return", "/etc/config/passwd", "/var/dlancmd/compose.sh"}
 
-	X86_LINUX_BASIC = [6]string{"/etc/dlancmd/tempexec","/etc/dlancmd/result","/var/upd_sh_err.log","/etc/dlancmd/return","/config/passwd","/etc/dlancmd/compose.sh"}
-	ARM_LINUX_UPDATE = [4]string{"/var/dlancmd/apppre","/var/dlancmd/appsh","/var/dlancmd/cfgpre","/var/dlancmd/cfgsh"}
-	X86_LINUX_UPDATE = [4]string{"/etc/dlancmd/apppre","/etc/dlancmd/appsh","/etc/dlancmd/cfgpre","/etc/dlancmd/cfgsh"}
+	X86_LINUX_BASIC  = [6]string{"/etc/dlancmd/tempexec", "/etc/dlancmd/result", "/var/upd_sh_err.log", "/etc/dlancmd/return", "/config/passwd", "/etc/dlancmd/compose.sh"}
+	ARM_LINUX_UPDATE = [4]string{"/var/dlancmd/apppre", "/var/dlancmd/appsh", "/var/dlancmd/cfgpre", "/var/dlancmd/cfgsh"}
+	X86_LINUX_UPDATE = [4]string{"/etc/dlancmd/apppre", "/etc/dlancmd/appsh", "/etc/dlancmd/cfgpre", "/etc/dlancmd/cfgsh"}
 
-	DES_KEY = "dlandproxy"
-	SSU_DEC_PASSWD  = "sangforupd~!@#$%"
-	SSU_DEC_PASSWD_OLD  = "greatsinfor"
-	CHECK_UPGRADE_SN   = "/app/usr/sbin/checkupdsn.sh"
-	CSSU_PACKAGE_CONF = "upgrade.conf"
-	SSU_PACKAGE_CONF = "package.conf"
-	UPDHISTORY_SCRIPT = "/usr/sbin/updhistory.sh"
-	UPDATE_CHECK_SCRIPT = "/usr/sbin/updatercheck.sh"
-	BACKUP_SCTRIPT = "/usr/sbin/bakcfgsh"
+	DES_KEY               = "dlandproxy"
+	SSU_DEC_PASSWD        = "sangforupd~!@#$%"
+	SSU_DEC_PASSWD_OLD    = "greatsinfor"
+	CHECK_UPGRADE_SN      = "/app/usr/sbin/checkupdsn.sh"
+	CSSU_PACKAGE_CONF     = "upgrade.conf"
+	SSU_PACKAGE_CONF      = "package.conf"
+	UPDHISTORY_SCRIPT     = "/usr/sbin/updhistory.sh"
+	UPDATE_CHECK_SCRIPT   = "/usr/sbin/updatercheck.sh"
+	BACKUP_SCTRIPT        = "/usr/sbin/bakcfgsh"
 	PRERECOVCFGSH_SCTRIPT = "/usr/sbin/prercovcfgsh"
-	RECOVCFGSH_SCTRIPT = "/usr/sbin/rcovcfgsh"
-	PACKAGE_TYPE = 1
-	RESTORE_TYPE = 2
-	EXECUTE_TYPE = 3
-	AUTOBAK_NUMS = 10
+	RECOVCFGSH_SCTRIPT    = "/usr/sbin/rcovcfgsh"
+	PACKAGE_TYPE          = 1
+	RESTORE_TYPE          = 2
+	EXECUTE_TYPE          = 3
+	AUTOBAK_NUMS          = 10
 )
 
 //生成随机字符串
-func GetRandomString(length int) string{
+func GetRandomString(length int) string {
 	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := []byte(str)
 	result := []byte{}
@@ -121,24 +120,44 @@ func GetRandomString(length int) string{
 }
 
 func GetCurrentDirectory() string {
+	/* it only work in linux correctly
+
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		fmt.Println("Get Current Directory wrong:",err)
 		return "/tmp"
 	}
 	return strings.Replace(dir, "\\", "/", -1)
+	*/
+
+	pwd, _ := os.Getwd()
+	return pwd
 }
 
 //judge file or directory is exist or not
-func IsPathExist(path string)bool{
-	_,err := os.Stat(path)
+func IsPathExist(path string) bool {
+	_, err := os.Stat(path)
 	if err != nil || os.IsNotExist(err) {
 		return false
 	}
 	return true
 }
 
+func InitDirectory(path string) error {
+	if IsPathExist(path) {
+		if err := os.RemoveAll(path); err != nil {
+			return err
+		}
+
+	}
+	mask := syscall.Umask(0)
+	defer syscall.Umask(mask)
+	if err := os.MkdirAll(path, 0775); err != nil {
+		return err
+	}
+	return nil
+}
+
 func FtpDownloadSSUPackage() {
 
 }
-

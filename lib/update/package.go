@@ -55,8 +55,12 @@ func UnpackSSU(){
 
 	IncFlag()
 }
-func InitDirectory(U *Update)error {
-	os.Mkdir()
+
+//TODO: now
+func InitDirectory(path string)error {
+	if IsPathExist(path){
+		if err := os.RemoveAll(path) err != nil { return err}
+	}
 
 	return nil
 }
@@ -74,7 +78,7 @@ func InitEnviroment(U *Update)error {
 
 func PrepareUpgrade(S *Session,U *Update)error{
 	fmt.Println("init to upgrade or restore  the package:%s",U.SSUPackage)
-	if U.UpdatingFlag && ((time.Now() - U.UpdateTime) < UPD_TIMEOUT){
+	if U.UpdatingFlag && ((time.Now() - U.UpdateTime) < UPD_TIMEOUT){ //TODO:can't guarantee it right or not
 		fmt.Errorf("now update the package:%s,begin at %t ....")
 	}
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	"io/ioutil"
 )
 
 /*
@@ -156,6 +157,15 @@ func InitDirectory(path string) error {
 		return err
 	}
 	return nil
+}
+
+func GetFileList(dir string) []os.FileInfo{
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Get file list error: %v\n", err)
+		return nil
+	}
+	return files
 }
 
 func FtpDownloadSSUPackage() {

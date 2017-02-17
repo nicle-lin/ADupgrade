@@ -102,28 +102,18 @@ func InitEnviroment(U *Update) error {
 	U.PkgTemp = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/pkg_tmp/")
 	U.Download = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/download/")
 	U.AutoBak = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/autobak/")
-	if err := InitDirectory(U.SingleUnpkg); err != nil {
-		return err
-	}
-	if err := InitDirectory(U.ComposeUnpkg); err != nil {
-		return err
-	}
-	if err := InitDirectory(U.PkgTemp); err != nil {
-		return err
-	}
-	if err := InitDirectory(U.Download); err != nil {
-		return err
-	}
-	if err := InitDirectory(U.AutoBak); err != nil {
-		return err
-	}
+	if err := InitDirectory(U.SingleUnpkg); err != nil {return err}
+	if err := InitDirectory(U.ComposeUnpkg); err != nil {return err}
+	if err := InitDirectory(U.PkgTemp); err != nil {return err}
+	if err := InitDirectory(U.Download); err != nil {return err}
+	if err := InitDirectory(U.AutoBak); err != nil {return err}
 	return nil
 }
 
 func PrepareUpgrade(S *Session, U *Update) error {
 	fmt.Println("init to upgrade or restore  the package:%s", U.SSUPackage)
-	if U.UpdatingFlag && ((time.Now() - U.UpdateTime) < UPD_TIMEOUT) { //TODO:can't guarantee it right or not
-		fmt.Errorf("now update the package:%s,begin at %t ....")
+	if U.UpdatingFlag && (time.Now().Sub(U.UpdateTime) < UPD_TIMEOUT * time.Second ) {
+		fmt.Errorf("now update the package:%s,begin at %v\n ....",U.UpdateTime)
 	}
 
 	return nil

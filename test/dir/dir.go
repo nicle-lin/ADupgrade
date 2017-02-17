@@ -10,6 +10,7 @@ import (
 	"time"
 	"math/rand"
 	"syscall"
+	"runtime"
 )
 
 func IsPathExist(path string)bool{
@@ -27,8 +28,11 @@ func InitDirectory(path string)error {
 	}else {
 		fmt.Println("error:not exist")
 	}
-	mask := syscall.Umask(0)
-	defer syscall.Umask(mask)
+	if runtime.GOOS != "windows"{
+		mask := syscall.Umask(0)
+		defer syscall.Umask(mask)
+	}
+
 	if err := os.MkdirAll(path,0775); err != nil {return err }
 	return nil
 }
@@ -61,8 +65,10 @@ func GetRandomString(length int) string{
 
 func main() {
 	fmt.Println("initdir:",InitDirectory(os.Args[1]))
-	mask := syscall.Umask(0)
-	defer syscall.Umask(mask)
+	if runtime.GOOS != "windows"{
+		mask := syscall.Umask(0)
+		defer syscall.Umask(mask)
+	}
 	os.Mkdir(os.Args[2],0777)
 	fmt.Println(os.Getwd())
 

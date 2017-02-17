@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 	"io/ioutil"
+	"runtime"
 )
 
 /*
@@ -151,8 +152,10 @@ func InitDirectory(path string) error {
 		}
 
 	}
-	mask := syscall.Umask(0)
-	defer syscall.Umask(mask)
+	if runtime.GOOS != "windows"{
+		mask := syscall.Umask(0)
+		defer syscall.Umask(mask)
+	}
 	if err := os.MkdirAll(path, 0775); err != nil {
 		return err
 	}

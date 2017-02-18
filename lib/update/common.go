@@ -10,6 +10,9 @@ import (
 	"time"
 	"io/ioutil"
 	"runtime"
+	"bufio"
+	"crypto/md5"
+	"io"
 )
 
 /*
@@ -171,6 +174,49 @@ func GetFileList(dir string) []os.FileInfo{
 	return files
 }
 
-func FtpDownloadSSUPackage() {
+func FtpDownloadSSUPackage(ssuPath string) error{
+	//TODO: download package from ftp server\
+	return nil
+}
 
+//prameter offset only need one prameter
+func md5SumFile(file string,offset ...int64) string {
+	f, err := os.Open(file)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+
+	if len(offset) <= 1{
+		f.Seek(offset[0],1)
+	}else {
+		fmt.Println("prameter offset only need one prameter")
+	}
+	r := bufio.NewReader(f)
+
+	h := md5.New()
+
+	_, err = io.Copy(h, r)
+	if err != nil {
+		return ""
+	}
+
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func md5SumString(data []byte) string {
+	h := md5.New()
+	h.Write(data)
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func Md5Sum(arg interface{},offset ...int64) string {
+	switch v := arg.(type) {
+	case string:
+		return md5SumFile(v,offset)
+	case []byte:
+		return md5SumString(v)
+	default:
+		return fmt.Sprintf("parameter: %x is wrong type",arg)
+	}
 }

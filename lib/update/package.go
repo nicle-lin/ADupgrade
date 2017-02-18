@@ -5,6 +5,9 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+	"os"
+	"io"
+	"crypto/md5"
 )
 
 var Flag uint16
@@ -95,7 +98,7 @@ func InitClient(appVersion []byte) *Update {
 	return U
 }
 
-func InitEnviroment(U *Update) error {
+func InitEnvironment(U *Update) error {
 	fmt.Println("now init enviroment for update or restore")
 	U.SingleUnpkg = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/unpkg/")
 	U.ComposeUnpkg = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/compose_unpkg/")
@@ -109,11 +112,85 @@ func InitEnviroment(U *Update) error {
 	if err := InitDirectory(U.AutoBak); err != nil {return err}
 	return nil
 }
+//read file  from start to end
+func ReadMd5FromPackage(ssuPath string, start,end int64) (string,error){
+	if start < 0 || end < 0 || start > end {
+		fmt.Println("params start or end is wrong")
+		return "",fmt.Errorf("params start or end is wrong\n")
+	}
+	file, err := os.Open(ssuPath)
+	if err != nil{
+		return "",err
+	}
+	length := end-start
+	buf := make([]byte,length)
+	_,err = file.Seek(start,1)
+	n, err := io.ReadFull(file,buf)
+	if err != nil && int64(n) != length{
+		return "",err
+	}
+	return string(buf),nil
+}
+
+func ComposePackageMd5(ssuPath string)error{
+	ssuMd5, err := ReadMd5FromPackage(ssuPath,8,40)
+	if err != nil {
+		return err
+	}
+	if ssuMd5 == Md5Sum(ssuMd5,48) {
+		return nil
+	} else {
+		return fmt.Errorf("compose package md5 don't match\n")
+	}
+}
+
+
+
+func ComposePackage(ssuPath string) bool{
+	if ComposePackageMd5(ssuPath) == nil{
+		if filepath.Ext(ssuPath) == ".cssu" {
+			return true
+		}else {
+			fmt.Println("The package is a cssu file,but not have a .cssu extname.")
+			return false
+		}
+	}else {
+		return false
+	}
+}
+
+func InitComposePackageArr(ssuPath string) []string {
+	return
+}
+
+func SinglePackageMd5(ssuPath string) error {
+	ssuMd5, err := ReadMd5FromPackage(ssuPath,0,32)
+	if err != nil {
+		return err
+	}
+	if ssuMd5 == Md5Sum(ssuMd5,33) {
+		return nil
+	} else {
+		return fmt.Errorf("single package md5 don't match\n")
+	}
+}
+
 
 func PrepareUpgrade(S *Session, U *Update) error {
 	fmt.Println("init to upgrade or restore  the package:%s", U.SSUPackage)
 	if U.UpdatingFlag && (time.Now().Sub(U.UpdateTime) < UPD_TIMEOUT * time.Second ) {
 		fmt.Errorf("now update the package:%s,begin at %v\n ....",U.UpdateTime)
+	}
+	if err := InitEnvironment(U); err != nil {return err}
+	if err := FtpDownloadSSUPackage(U.SSUPackage); err != nil {return err}
+	if !IsPathExist(U.SSUPackage){
+		return fmt.Errorf("can't find the SSU package,please check it\n");
+	}
+
+	if ComposePackage(U.SSUPackage){
+		InitComposePackageArr(U.SSUPackage) //TODO: not done yet
+	}else if SinglePackageMd5(U.SSUPackage){
+
 	}
 
 	return nil

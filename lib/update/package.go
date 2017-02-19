@@ -8,6 +8,8 @@ import (
 	"os"
 	"io"
 	"crypto/md5"
+	"runtime"
+	"os/exec"
 )
 
 var Flag uint16
@@ -59,6 +61,31 @@ func UnpackSSU() {
 
 	IncFlag()
 }
+func unpackPackage(U *Update)error {
+	// function InitEnvironment has been init the path U.SingleUnpkg
+	fmt.Println("begin to unpack the package")
+	var UnpackTool string
+	if runtime.GOOS	 == "windows"{
+		UnpackTool = filepath.Join(U.CurrentWorkFolder,"tool","7z.exe")
+	}else{
+		UnpackTool = "7za"
+	}
+	oldPasswdCommand := UnpackTool + "x -y -p" + SSU_DEC_PASSWD_OLD + " " + U.SSUPackage + " -o" + U.SingleUnpkg + " > 7z.log"
+	newPasswdCommand := UnpackTool + "x -y -p" + SSU_DEC_PASSWD_OLD + " " + U.SSUPackage + " -o" + U.SingleUnpkg + " > 7z.log"
+	old := exec.Command(oldPasswdCommand)
+	new := exec.Command(newPasswdCommand)
+	new.Run() == nil || old.Run() == nil
+}
+
+
+func UnpackPackage(U *Update)error{
+	if U.SSUType == PACKAGE_TYPE || U.SSUType == RESTORE_TYPE {
+		return unpackPackage(U)
+	}
+	return nil
+}
+
+
 
 func InitClient(appVersion []byte) *Update {
 	U := new(Update)
@@ -190,8 +217,19 @@ func PrepareUpgrade(S *Session, U *Update) error {
 	if ComposePackage(U.SSUPackage){
 		InitComposePackageArr(U.SSUPackage) //TODO: not done yet
 	}else if SinglePackageMd5(U.SSUPackage){
-
+		//TODO:
+		/*
+		@package_arr = Array.new
+		packhash = {"packet" => now_package, "type" => "1"}
+		@package_arr<<packhash
+		*/
+		U.SSUType = PACKAGE_TYPE
+	}else {
+		return fmt.Errorf("The package is not a valid package,please check first. if your use a ftp path,please download it to local and try again.")
 	}
 
 	return nil
 }
+
+
+

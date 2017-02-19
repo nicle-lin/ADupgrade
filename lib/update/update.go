@@ -241,6 +241,8 @@ func Upgrade(ip, port, password, ssu string) error {
 	if PrepareUpgrade(S, U) != nil {
 		return err
 	}
+
+
 	return nil
 }
 

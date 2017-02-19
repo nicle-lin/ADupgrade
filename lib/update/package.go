@@ -71,10 +71,18 @@ func unpackPackage(U *Update)error {
 		UnpackTool = "7za"
 	}
 	oldPasswdCommand := UnpackTool + "x -y -p" + SSU_DEC_PASSWD_OLD + " " + U.SSUPackage + " -o" + U.SingleUnpkg + " > 7z.log"
-	newPasswdCommand := UnpackTool + "x -y -p" + SSU_DEC_PASSWD_OLD + " " + U.SSUPackage + " -o" + U.SingleUnpkg + " > 7z.log"
+	newPasswdCommand := UnpackTool + "x -y -p" + SSU_DEC_PASSWD + " " + U.SSUPackage + " -o" + U.SingleUnpkg + " > 7z.log"
 	old := exec.Command(oldPasswdCommand)
 	new := exec.Command(newPasswdCommand)
-	new.Run() == nil || old.Run() == nil
+	errNew := new.Run()
+	errOld := old.Run()
+	if errNew == nil {
+		return nil
+	}else if errNew != nil {
+		return errNew
+	}else{
+		return errOld
+	}
 }
 
 

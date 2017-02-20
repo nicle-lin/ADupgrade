@@ -96,7 +96,7 @@ var (
 	X86_LINUX_UPDATE = [4]string{"/etc/dlancmd/apppre", "/etc/dlancmd/appsh", "/etc/dlancmd/cfgpre", "/etc/dlancmd/cfgsh"}
 
 	DES_KEY               = "dlandproxy"
-	SSU_DEC_PASSWD        = "sangforupd\~\!\@\#\$\%"
+	SSU_DEC_PASSWD        = "sangforupd~!@#$%"
 	SSU_DEC_PASSWD_OLD    = "greatsinfor"
 	CHECK_UPGRADE_SN      = "/app/usr/sbin/checkupdsn.sh"
 	CSSU_PACKAGE_CONF     = "upgrade.conf"

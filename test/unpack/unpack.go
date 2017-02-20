@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"os/exec"
 	"os"
+	"time"
+	"io/ioutil"
 )
 
 var SSU_DEC_PASSWD        = "sangforupd~!@#$%"
@@ -44,11 +46,48 @@ func unpackPackage(U *Update)error {
 	//7za x -y -psangforupd\~\!\@\#\$\%  /home/gubl/Desktop/sangfor/ADUpgrade/AD6.5\(20160809\).ssu  -o/home/gubl/web/shipyard/src/github.com/nicle-lin/ADupgrade/test/unpack/singleunpkg
 	//oldPasswdCommand := UnpackTool + " x -y -p" + SSU_DEC_PASSWD_OLD + " " + U.SSUPackage + " -o" + U.SingleUnpkg + " > 7z.log"
 	//fmt.Println("old:",oldPasswdCommand)
-	newPasswdCommand := UnpackTool + " x -y -p" + SSU_DEC_PASSWD + " " + "\\\"" + U.SSUPackage + "\\\"" + " -o" + U.SingleUnpkg + " > 7z.log"
-	fmt.Println("new:",newPasswdCommand)
+	//newPasswdCommand := UnpackTool + " x -y -p" + SSU_DEC_PASSWD + " " + "\\\"" + U.SSUPackage + "\\\"" + " -o" + U.SingleUnpkg + " > 7z.log"
+	//fmt.Println("new:",newPasswdCommand)
 	//old := exec.Command(oldPasswdCommand)
-	new := exec.Command(newPasswdCommand)
-	errnew := new.Run()
+
+	args := []string{
+		0: "x",
+		1: "-y",
+		2: "-p"+SSU_DEC_PASSWD,
+		3: U.SSUPackage,
+		4: "-o"+ filepath.Join(U.CurrentWorkFolder,U.SingleUnpkg),
+		//5: ">",
+		//6: filepath.Join(U.CurrentWorkFolder,"7z.log"),
+	}
+
+	f,err := exec.LookPath("7za")
+	fmt.Println("7za err:",err)
+	fmt.Println("7za:",f)
+	UnpackTool = f
+	fmt.Println("unpacktool:",UnpackTool)
+
+	//new := exec.Command(UnpackTool,"x","-y","-p"+SSU_DEC_PASSWD, U.SSUPackage,"-o"+U.SingleUnpkg,"> 7z.log")
+	new := exec.Command("7za",args...)
+	fmt.Println("new:",new)
+
+	stdout, _ := new.StdoutPipe()
+	errnew := new.Start()
+
+	content, err := ioutil.ReadAll(stdout)
+	ioutil.WriteFile("7z.log",content,0664)
+	fmt.Println("content:",string(content))
+	new.Wait()
+	out, _ := new.CombinedOutput()
+	fmt.Println("out:",string(out))
+
+	result, errout := new.Output()
+	fmt.Println("result:",result)
+	fmt.Println("errout:",errout)
+
+	fmt.Println("errnew:",errnew)
+
+
+
 
 	if errnew == nil {
 		return nil
@@ -75,4 +114,5 @@ func main() {
 	if err := unpackPackage(U); err != nil {
 		fmt.Println("error:",err)
 	}
+	time.Sleep(1*time.Second)
 }

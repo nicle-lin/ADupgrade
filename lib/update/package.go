@@ -122,6 +122,18 @@ func unpackPackage(U *Update)error {
 
 }
 
+func UnpackCfg()  {
+
+}
+
+func FreeUpdateDir(){
+
+}
+
+
+func FreeCfgDir(){
+	
+}
 
 func UnpackPackage(U *Update)error{
 	if U.SSUType == PACKAGE_TYPE || U.SSUType == RESTORE_TYPE {
@@ -145,10 +157,18 @@ func LoadAppData (AppPath string) {
 }
 
 func UpdateApps(S *Session,apps, path string) {
-	return 
+	return
+}
+
+func UpdateSinglePacket(){
+	CheckUpdateCondition()
 }
 
 
+func CheckUpdateCondition()error{
+	Put()
+	Exec()
+}
 
 func InitClient(appVersion []byte) *Update {
 	U := new(Update)

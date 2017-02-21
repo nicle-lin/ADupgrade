@@ -10,6 +10,7 @@ import (
 	"crypto/md5"
 	"runtime"
 	"os/exec"
+	"io/ioutil"
 )
 
 var Flag uint16
@@ -70,19 +71,53 @@ func unpackPackage(U *Update)error {
 	}else{
 		UnpackTool = "7za"
 	}
-	oldPasswdCommand := UnpackTool + "x -y -p" + SSU_DEC_PASSWD_OLD + " " + U.SSUPackage + " -o" + U.SingleUnpkg + " > 7z.log"
-	newPasswdCommand := UnpackTool + "x -y -p" + SSU_DEC_PASSWD + " " + U.SSUPackage + " -o" + U.SingleUnpkg + " > 7z.log"
-	old := exec.Command(oldPasswdCommand)
-	new := exec.Command(newPasswdCommand)
-	errNew := new.Run()
-	errOld := old.Run()
-	if errNew == nil {
-		return nil
-	}else if errNew != nil {
-		return errNew
-	}else{
-		return errOld
+	newArgs := []string{
+		0: "x",
+		1: "-y",
+		2: "-p"+SSU_DEC_PASSWD,
+		3: U.SSUPackage,
+		4: "-o"+ filepath.Join(U.CurrentWorkFolder,U.SingleUnpkg),
 	}
+
+	new := exec.Command(UnpackTool,newArgs...)
+	stdout, _ := new.StdoutPipe()
+	if err := new.Start(); err != nil {return err}
+	data, err := ioutil.ReadAll(stdout)
+	if err != nil {
+		fmt.Println("unpack log has been lost")
+	}
+	ioutil.WriteFile(filepath.Join(U.CurrentWorkFolder,"7z.log"),data,0664)
+	if err := new.Wait(); err != nil {
+		return err
+	}else{
+		return nil
+	}
+
+
+	oldArgs := []string{
+		0: "x",
+		1: "-y",
+		2: "-p"+SSU_DEC_PASSWD_OLD,
+		3: U.SSUPackage,
+		4: "-o"+ filepath.Join(U.CurrentWorkFolder,U.SingleUnpkg),
+	}
+	old := exec.Command(UnpackTool,oldArgs...)
+	stdout, _ = old.StdoutPipe()
+	if err := old.Start(); err != nil {return err}
+	data, err = ioutil.ReadAll(stdout)
+	if err != nil {
+		fmt.Println("unpack log has been lost:",err)
+	}
+	if err := ioutil.WriteFile(filepath.Join(U.CurrentWorkFolder,"7z.log"),data,0664); err != nil {
+		fmt.Println("unpack log can't write it to 7z.log:",err)
+	}
+	if err := old.Wait(); err != nil {
+		return err
+	}else{
+		return nil
+	}
+
+
 }
 
 

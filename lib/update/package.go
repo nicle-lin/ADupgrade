@@ -90,6 +90,7 @@ func unpackPackage(U *Update)error {
 	if err := new.Wait(); err != nil {
 		return err
 	}else{
+		fmt.Println("unpack success")
 		return nil
 	}
 
@@ -114,6 +115,7 @@ func unpackPackage(U *Update)error {
 	if err := old.Wait(); err != nil {
 		return err
 	}else{
+		fmt.Println("unpack success")
 		return nil
 	}
 
@@ -126,6 +128,24 @@ func UnpackPackage(U *Update)error{
 		return unpackPackage(U)
 	}
 	return nil
+}
+
+func ObtainApps(AppPath string)[]string  {
+
+	return
+}
+
+func DesApps(AppPath string) []string{
+
+	return
+}
+
+func LoadAppData (AppPath string) {
+
+}
+
+func UpdateApps(S *Session,apps, path string) {
+	return 
 }
 
 

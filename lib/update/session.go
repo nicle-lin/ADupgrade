@@ -48,13 +48,20 @@ type Unpack struct {
 	Download     string
 	AutoBak      string
 
+	UpdatePath  string
+
 
 }
 
 type Package struct {
 	UpdatingFlag bool      //updating or not
 	UpdateTime   time.Time //when to update
+	RestoringFlag bool
+}
 
+type Cfg struct {
+	CfgPath string
+	CfgPathTmp string
 }
 
 type Session struct {
@@ -67,6 +74,7 @@ type Update struct {
 	*SSU
 	*Package
 	*Unpack
+	*Cfg
 }
 
 //read data from peer and decrypt data, and return data

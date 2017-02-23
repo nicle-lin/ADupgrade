@@ -128,8 +128,9 @@ func unpackPackage(U *Update)error {
 	return unpack(U.SSUPackage,U.SingleUnpkg,"7za",logFile)
 }
 
-func UnpackCfg()  {
-
+//TODO now
+func UnpackCfg(cfgPath string) error {
+	unpack(cfgPath,)
 }
 
 func FreeUpdateDir(){
@@ -226,8 +227,28 @@ func InitEnvironment(U *Update) error {
 	if err := InitDirectory(U.PkgTemp); err != nil {return err}
 	if err := InitDirectory(U.Download); err != nil {return err}
 	if err := InitDirectory(U.AutoBak); err != nil {return err}
+
+
+
 	return nil
 }
+
+
+func InitCfgEnvironment(U *Update)error{
+	if U.RestoringFlag {
+		return fmt.Errorf("it is restoring,now can't restore\n")
+	}
+	U.UpdatePath = filepath.Join(U.CurrentWorkFolder,U.FolderPrefix,"updater")
+	U.CfgPath = filepath.Join(U.UpdatePath,"cfg")
+	U.CfgPathTmp = filepath.Join(U.UpdatePath,"cfg_tmp")
+	if err := InitDirectory(U.CfgPath); err != nil {return err}
+	if err := InitDirectory(U.CfgPathTmp); err != nil { return err}
+	return nil
+
+
+}
+
+
 //read file  from start to end
 func ReadMd5FromPackage(ssuPath string, start,end int64) (string,error){
 	if start < 0 || end < 0 || start > end {
@@ -295,7 +316,7 @@ func SinglePackageMd5(ssuPath string) error {
 func PrepareUpgrade(S *Session, U *Update) error {
 	fmt.Println("init to upgrade or restore  the package:%s", U.SSUPackage)
 	if U.UpdatingFlag && (time.Now().Sub(U.UpdateTime) < UPD_TIMEOUT * time.Second ) {
-		fmt.Errorf("now update the package:%s,begin at %v\n ....",U.UpdateTime)
+		return fmt.Errorf("now update the package:%s,begin at %v\n ....",U.UpdateTime)
 	}
 	if err := InitEnvironment(U); err != nil {return err}
 	if err := FtpDownloadSSUPackage(U.SSUPackage); err != nil {return err}

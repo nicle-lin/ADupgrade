@@ -243,6 +243,10 @@ func Upgrade(ip, port, password, ssu string) error {
 	}
 
 
+	files := GetFileList(U.SingleUnpkg)
+
+
+
 	return nil
 }
 

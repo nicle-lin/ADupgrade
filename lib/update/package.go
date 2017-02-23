@@ -62,31 +62,29 @@ func UnpackSSU() {
 
 	IncFlag()
 }
-func unpackPackage(U *Update)error {
-	// function InitEnvironment has been init the path U.SingleUnpkg
-	fmt.Println("begin to unpack the package")
-	var UnpackTool string
+
+func unpack(packPath,destPath,unpackTool,logFile string) error{
 	if runtime.GOOS	 == "windows"{
-		UnpackTool = filepath.Join(U.CurrentWorkFolder,"tool","7z.exe")
-	}else{
-		UnpackTool = "7za"
+		unpackTool = filepath.Join(GetCurrentDirectory(),"tool","7z.exe")
 	}
 	newArgs := []string{
 		0: "x",
 		1: "-y",
 		2: "-p"+SSU_DEC_PASSWD,
-		3: U.SSUPackage,
-		4: "-o"+ filepath.Join(U.CurrentWorkFolder,U.SingleUnpkg),
+		3: packPath,
+		4: "-o"+ destPath,
 	}
 
-	new := exec.Command(UnpackTool,newArgs...)
+	new := exec.Command(unpackTool,newArgs...)
 	stdout, _ := new.StdoutPipe()
 	if err := new.Start(); err != nil {return err}
 	data, err := ioutil.ReadAll(stdout)
 	if err != nil {
 		fmt.Println("unpack log has been lost")
 	}
-	ioutil.WriteFile(filepath.Join(U.CurrentWorkFolder,"7z.log"),data,0664)
+	if err := ioutil.WriteFile(logFile,data,0664);err != nil {
+		fmt.Println("unpack log can't write it to logfile:",err)
+	}
 	if err := new.Wait(); err != nil {
 		return err
 	}else{
@@ -95,22 +93,23 @@ func unpackPackage(U *Update)error {
 	}
 
 
+
 	oldArgs := []string{
 		0: "x",
 		1: "-y",
 		2: "-p"+SSU_DEC_PASSWD_OLD,
-		3: U.SSUPackage,
-		4: "-o"+ filepath.Join(U.CurrentWorkFolder,U.SingleUnpkg),
+		3: packPath,
+		4: "-o"+ destPath,
 	}
-	old := exec.Command(UnpackTool,oldArgs...)
+	old := exec.Command(unpackTool,oldArgs...)
 	stdout, _ = old.StdoutPipe()
 	if err := old.Start(); err != nil {return err}
 	data, err = ioutil.ReadAll(stdout)
 	if err != nil {
 		fmt.Println("unpack log has been lost:",err)
 	}
-	if err := ioutil.WriteFile(filepath.Join(U.CurrentWorkFolder,"7z.log"),data,0664); err != nil {
-		fmt.Println("unpack log can't write it to 7z.log:",err)
+	if err := ioutil.WriteFile(logFile,data,0664); err != nil {
+		fmt.Println("unpack log can't write it to logfile:",err)
 	}
 	if err := old.Wait(); err != nil {
 		return err
@@ -119,7 +118,14 @@ func unpackPackage(U *Update)error {
 		return nil
 	}
 
+}
 
+
+func unpackPackage(U *Update)error {
+	// function InitEnvironment has been init the path U.SingleUnpkg
+	fmt.Println("begin to unpack the package")
+	logFile := filepath.Join(GetCurrentDirectory(),"7z.log")
+	return unpack(U.SSUPackage,U.SingleUnpkg,"7za",logFile)
 }
 
 func UnpackCfg()  {

@@ -571,3 +571,8 @@ func Decrypt(inbuf []byte,outbuf []byte)(outbyte []byte, err error){
 	}
 
 }
+
+func EncFile(srcFile, dstFile string)error  {
+
+	return nil
+}

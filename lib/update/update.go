@@ -266,10 +266,10 @@ func Upgrade(ip, port, password, ssu string) error {
 		return err
 	}
 
-	//TODO enc the unpack file to des file
-	/*
-	files := GetFileList(U.SingleUnpkg)
-	*/
+	apps := ObtainApps(U.SingleUnpkg)
+	for _, v := range apps {
+		if err := EncFile(v, v+"des"); err != nil {return err}
+	}
 	
 	if err := ThreadUpdateAllPackages(S,U); err != nil {return err}
 	if err := UpdateUpgradeHistory(S,U);err != nil {return err}

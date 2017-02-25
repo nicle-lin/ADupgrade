@@ -4,6 +4,7 @@ import (
 	"os"
 	"io/ioutil"
 	"fmt"
+	"regexp"
 )
 
 func GetFileList(dir string) []os.FileInfo{
@@ -15,7 +16,18 @@ func GetFileList(dir string) []os.FileInfo{
 	return files
 }
 
-func Get
+func GetApps(dir string)(apps []string){
+
+	reg := regexp.MustCompile(`app[\d]`)
+	files := GetFileList(dir)
+	for _, v := range files{
+		if reg.FindAllString(v.Name(),-1) != nil{
+			apps = append(apps,v.Name())
+		}
+
+	}
+	return apps
+}
 
 
 func main() {
@@ -25,4 +37,5 @@ func main() {
 	for _, v := range files{
 		fmt.Println(v.Name())
 	}
+	fmt.Println(GetApps(os.Args[1]))
 }

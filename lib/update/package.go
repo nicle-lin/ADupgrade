@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"io/ioutil"
 	"github.com/docker/docker/utils"
+	"regexp"
 )
 
 var Flag uint16
@@ -194,10 +195,21 @@ func UnpackPackage(U *Update)error{
 	return nil
 }
 
-func ObtainApps(AppPath string)[]string  {
 
-	return
+func ObtainApps(appPath string)(apps []string){
+
+	reg := regexp.MustCompile(`app[\d]`)
+	files := GetFileList(appPath)
+	for _, v := range files{
+		//return nil means find the str
+		if reg.FindAllString(v.Name(),-1) != nil{
+			apps = append(apps,v.Name())
+		}
+
+	}
+	return apps
 }
+
 
 func DesApps(AppPath string) []string{
 

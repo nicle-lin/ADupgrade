@@ -171,7 +171,7 @@ func UnpackCfg(U *Update,cfg string) error {
 }
 
 
-
+//TODO pack the config file, not done yet
 func PackCfg(U *Update,cfg string)error{
 	fmt.Println("begin to unpack the config package")
 	logFile := filepath.Join(GetCurrentDirectory(),"pakccfg.log")
@@ -205,7 +205,7 @@ func DesApps(AppPath string) []string{
 }
 
 func LoadAppData (AppPath string) {
-
+	return
 }
 
 func UpdateApps(S *Session,apps, path string) {
@@ -216,16 +216,22 @@ func UpdateApps(S *Session,apps, path string) {
 
 func RestoreDefaultPriv()error{
 
+	return nil
 }
 
-func UpdateSinglePacket()error{
-	CheckUpdateCondition()
+func UpdateSinglePacket(S *Session,U *Update)error{
+	if err := CheckUpdateCondition(S, U); err != nil {return err}
+	fmt.Println("appre exec success")
+
+	return nil
 }
 
 
-func CheckUpdateCondition()error{
-	Put()
-	Exec()
+func CheckUpdateCondition(S *Session,U *Update)error{
+	fmt.Println("check the update confition by appre.")
+	if err := Put(S, filepath.Join(U.SingleUnpkg,"apppre"),U.ServerAppRe);err != nil{return err}
+	if _,err := Exec(S,U,U.ServerAppRe); err != nil {return err}
+	return nil
 }
 
 func InitClient(appVersion []byte) *Update {

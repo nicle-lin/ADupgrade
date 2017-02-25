@@ -220,11 +220,11 @@ func UpgradeCheck(S *Session, U *Update) error {
 }
 
 
-//TODO only support to update single package
+//TODO only support to update single package right now
 func ThreadUpdateAllPackages(S *Session,U *Update)error  {
 	switch U.SSUType {
 	case PACKAGE_TYPE:
-		if err := UpdateSinglePacket();err != nil {return err}
+		if err := UpdateSinglePacket(S,U);err != nil {return err}
 	case RESTORE_TYPE:
 		if err := RestoreDefaultPriv(); err != nil {return err}
 	case EXECUTE_TYPE:
@@ -273,8 +273,8 @@ func Upgrade(ip, port, password, ssu string) error {
 	
 	if err := ThreadUpdateAllPackages(S,U); err != nil {return err}
 	if err := UpdateUpgradeHistory(S,U);err != nil {return err}
-	if ConfirmRebootDevice(S, U); err != nil {return err}
-	
+	if err := ConfirmRebootDevice(S, U); err != nil {return err}
+
 	defer FreeUpdateDir()
 	defer FreeCfgDir()
 	defer Logout(S)

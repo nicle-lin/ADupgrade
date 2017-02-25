@@ -219,6 +219,30 @@ func UpgradeCheck(S *Session, U *Update) error {
 	return nil
 }
 
+
+//TODO only support to update single package
+func ThreadUpdateAllPackages(S *Session,U *Update)error  {
+	switch U.SSUType {
+	case PACKAGE_TYPE:
+		if err := UpdateSinglePacket();err != nil {return err}
+	case RESTORE_TYPE:
+		if err := RestoreDefaultPriv(); err != nil {return err}
+	case EXECUTE_TYPE:
+		if err := Put(S,U.SSUPackage,U.Compose); err != nil {return err}
+		if _, err:= Exec(S,U,U.Compose); err != nil {return err}
+	default:
+		fmt.Println("unknown type packet:",U.SSUType)
+	}
+}
+
+func UpdateUpgradeHistory(S *Session,U *Update)error  {
+
+}
+
+func ConfirmRebootDevice(S *Session,U *Update)error{
+
+}
+
 func Upgrade(ip, port, password, ssu string) error {
 
 	S, err := Login(ip, port, password)
@@ -242,9 +266,18 @@ func Upgrade(ip, port, password, ssu string) error {
 		return err
 	}
 
-
+	//TODO enc the unpack file to des file
+	/*
 	files := GetFileList(U.SingleUnpkg)
-
+	*/
+	
+	if err := ThreadUpdateAllPackages(S,U); err != nil {return err}
+	if err := UpdateUpgradeHistory(S,U);err != nil {return err}
+	if ConfirmRebootDevice(S, U); err != nil {return err}
+	
+	defer FreeUpdateDir()
+	defer FreeCfgDir()
+	defer Logout(S)
 
 
 	return nil

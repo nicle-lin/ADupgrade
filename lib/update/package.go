@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"os/exec"
 	"io/ioutil"
+	"github.com/docker/docker/utils"
 )
 
 var Flag uint16
@@ -121,6 +122,40 @@ func unpack(packPath,destPath,unpackTool,logFile string) error{
 }
 
 
+//TODO pack the config file, not done yet
+func pack(packPath,destPath,unpackTool,logFile string)error  {
+	if runtime.GOOS	 == "windows"{
+		unpackTool = filepath.Join(GetCurrentDirectory(),"tool","7z.exe")
+	}
+	Args := []string{
+		0: "a",
+		1: "-p"+SSU_DEC_PASSWD_OLD,
+		2: packPath,
+		3: "-o"+ destPath,
+	}
+
+	new := exec.Command(unpackTool,Args...)
+	stdout, _ := new.StdoutPipe()
+	if err := new.Start(); err != nil {return err}
+	data, err := ioutil.ReadAll(stdout)
+	if err != nil {
+		fmt.Println("unpack log has been lost")
+	}
+	if err := ioutil.WriteFile(logFile,data,0664);err != nil {
+		fmt.Println("unpack log can't write it to logfile:",err)
+	}
+	if err := new.Wait(); err != nil {
+		return err
+	}else{
+		fmt.Println("unpack success")
+		return nil
+	}
+
+}
+
+
+
+
 func unpackPackage(U *Update)error {
 	// function InitEnvironment has been init the path U.SingleUnpkg
 	fmt.Println("begin to unpack the package")
@@ -128,9 +163,19 @@ func unpackPackage(U *Update)error {
 	return unpack(U.SSUPackage,U.SingleUnpkg,"7za",logFile)
 }
 
-//TODO now
-func UnpackCfg(cfgPath string) error {
-	unpack(cfgPath,)
+//cfg is a config file,it should be a config file absolute path
+func UnpackCfg(U *Update,cfg string) error {
+	fmt.Println("begin to unpack the config package")
+	logFile := filepath.Join(GetCurrentDirectory(),"unpakccfg.log")
+	return unpack(cfg,U.CfgPath,"7z",logFile)
+}
+
+
+
+func PackCfg(U *Update,cfg string)error{
+	fmt.Println("begin to unpack the config package")
+	logFile := filepath.Join(GetCurrentDirectory(),"pakccfg.log")
+	return unpack(cfg,U.CfgPathTmp,"7z",logFile)
 }
 
 func FreeUpdateDir(){
@@ -167,7 +212,13 @@ func UpdateApps(S *Session,apps, path string) {
 	return
 }
 
-func UpdateSinglePacket(){
+
+
+func RestoreDefaultPriv()error{
+
+}
+
+func UpdateSinglePacket()error{
 	CheckUpdateCondition()
 }
 
@@ -269,6 +320,7 @@ func ReadMd5FromPackage(ssuPath string, start,end int64) (string,error){
 	return string(buf),nil
 }
 
+//用于检查升级包是否为组合升级包，目前AD不是组合的
 func ComposePackageMd5(ssuPath string)error{
 	ssuMd5, err := ReadMd5FromPackage(ssuPath,8,40)
 	if err != nil {
@@ -282,7 +334,7 @@ func ComposePackageMd5(ssuPath string)error{
 }
 
 
-
+//用于检查升级包是否为组合升级包，目前AD不是组合的
 func ComposePackage(ssuPath string) bool{
 	if ComposePackageMd5(ssuPath) == nil{
 		if filepath.Ext(ssuPath) == ".cssu" {
@@ -296,6 +348,7 @@ func ComposePackage(ssuPath string) bool{
 	}
 }
 
+//用于检查升级包是否为组合升级包，目前AD不是组合的
 func InitComposePackageArr(ssuPath string) []string {
 	return
 }

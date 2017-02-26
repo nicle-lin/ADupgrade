@@ -266,7 +266,7 @@ func Upgrade(ip, port, password, ssu string) error {
 		return err
 	}
 
-	apps := ObtainApps(U.SingleUnpkg)
+	apps := GetApps(U.SingleUnpkg)
 	for _, v := range apps {
 		if err := EncFile(v, v+"des"); err != nil {return err}
 	}

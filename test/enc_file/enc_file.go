@@ -1,4 +1,4 @@
-package update
+package main
 
 /*
 #include <stdio.h>
@@ -527,12 +527,413 @@ import (
 	"os"
 	"bufio"
 	"io"
+	"encoding/binary"
 )
+
+
+var ErrBuffOverflow = fmt.Errorf("DSProtocol: buff is too small to io")
+
+type ReadStream interface {
+	Size() int
+	Left() int
+	Reset([]byte)
+	Data() []byte
+	ReadByte() (b byte, err error)
+	ReadUint16() (b uint16, err error)
+	ReadUint32() (b uint32, err error)
+	ReadUint64() (b uint64, err error)
+	ReadBuff(size int) (b []byte, err error)
+	CopyBuff(b []byte) error
+}
+
+type WriteStream interface {
+	Size() int
+	Left() int
+	Reset([]byte)
+	Data() []byte
+	WriteByte(b byte) error
+	WriteUint16(b uint16) error
+	WriteUint32(b uint32) error
+	WriteUint64(b uint64) error
+	WriteBuff(b []byte) error
+}
+
+//BigEndianStream
+type BEStream struct {
+	pos  int
+	buff []byte
+}
+
+//LittleEndianStream
+type LEStream struct {
+	pos  int
+	buff []byte
+}
+
+func NewBEStream(buff []byte) *BEStream {
+	return &BEStream{
+		buff: buff,
+	}
+}
+
+func NewLEStream(buff []byte) *LEStream {
+	return &LEStream{
+		buff: buff,
+	}
+}
+
+func (impl *BEStream) Size() int { return len(impl.buff) }
+
+func (impl *BEStream) Data() []byte { return impl.buff }
+
+func (impl *BEStream) Left() int { return len(impl.buff) - impl.pos }
+
+func (impl *BEStream) Reset(buff []byte) { impl.pos = 0; impl.buff = buff }
+
+func (impl *BEStream) ReadByte() (b byte, err error) {
+	if impl.Left() < 1 {
+		return 0, ErrBuffOverflow
+	}
+	b = impl.buff[impl.pos]
+	impl.pos += 1
+	return b, nil
+}
+
+func (impl *BEStream) ReadUint16() (b uint16, err error) {
+	if impl.Left() < 2 {
+		return 0, ErrBuffOverflow
+	}
+	b = binary.BigEndian.Uint16(impl.buff[impl.pos:])
+	impl.pos += 2
+	return b, nil
+}
+
+func (impl *BEStream) ReadUint32() (b uint32, err error) {
+	if impl.Left() < 4 {
+		return 0, ErrBuffOverflow
+	}
+	b = binary.BigEndian.Uint32(impl.buff[impl.pos:])
+	impl.pos += 4
+	return b, nil
+}
+
+func (impl *BEStream) ReadUint64() (b uint64, err error) {
+	if impl.Left() < 8 {
+		return 0, ErrBuffOverflow
+	}
+	b = binary.BigEndian.Uint64(impl.buff[impl.pos:])
+	impl.pos += 8
+	return b, nil
+}
+
+func (impl *BEStream) ReadBuff(size int) (buff []byte, err error) {
+	if impl.Left() < size {
+		return nil, ErrBuffOverflow
+	}
+	buff = make([]byte, size, size)
+	copy(buff, impl.buff[impl.pos:impl.pos+size])
+	impl.pos += size
+	return buff, nil
+}
+
+func (impl *BEStream) CopyBuff(b []byte) error {
+	if impl.Left() < len(b) {
+		return ErrBuffOverflow
+	}
+	copy(b, impl.buff[impl.pos:impl.pos+len(b)])
+	return nil
+}
+
+func (impl *BEStream) WriteByte(b byte) error {
+	if impl.Left() < 1 {
+		return ErrBuffOverflow
+	}
+	impl.buff[impl.pos] = b
+	impl.pos += 1
+	return nil
+}
+
+func (impl *BEStream) WriteUint16(b uint16) error {
+	if impl.Left() < 2 {
+		return ErrBuffOverflow
+	}
+	binary.BigEndian.PutUint16(impl.buff[impl.pos:], b)
+	impl.pos += 2
+	return nil
+}
+
+func (impl *BEStream) WriteUint32(b uint32) error {
+	if impl.Left() < 4 {
+		return ErrBuffOverflow
+	}
+	binary.BigEndian.PutUint32(impl.buff[impl.pos:], b)
+	impl.pos += 4
+	return nil
+}
+
+func (impl *BEStream) WriteUint64(b uint64) error {
+	if impl.Left() < 8 {
+		return ErrBuffOverflow
+	}
+	binary.BigEndian.PutUint64(impl.buff[impl.pos:], b)
+	impl.pos += 8
+	return nil
+}
+
+func (impl *BEStream) WriteBuff(buff []byte) error {
+	if impl.Left() < len(buff) {
+		return ErrBuffOverflow
+	}
+	copy(impl.buff[impl.pos:], buff)
+	impl.pos += len(buff)
+	return nil
+}
+
+func (impl *LEStream) Size() int { return len(impl.buff) }
+
+func (impl *LEStream) Data() []byte { return impl.buff }
+
+func (impl *LEStream) Left() int { return len(impl.buff) - impl.pos }
+
+func (impl *LEStream) Reset(buff []byte) { impl.pos = 0; impl.buff = buff }
+
+func (impl *LEStream) ReadByte() (b byte, err error) {
+	if impl.Left() < 1 {
+		return 0, ErrBuffOverflow
+	}
+	b = impl.buff[impl.pos]
+	impl.pos += 1
+	return b, nil
+}
+
+func (impl *LEStream) ReadUint16() (b uint16, err error) {
+	if impl.Left() < 2 {
+		return 0, ErrBuffOverflow
+	}
+	b = binary.LittleEndian.Uint16(impl.buff[impl.pos:])
+	impl.pos += 2
+	return b, nil
+}
+
+func (impl *LEStream) ReadUint32() (b uint32, err error) {
+	if impl.Left() < 4 {
+		return 0, ErrBuffOverflow
+	}
+	b = binary.LittleEndian.Uint32(impl.buff[impl.pos:])
+	impl.pos += 4
+	return b, nil
+}
+
+func (impl *LEStream) ReadUint64() (b uint64, err error) {
+	if impl.Left() < 8 {
+		return 0, ErrBuffOverflow
+	}
+	b = binary.LittleEndian.Uint64(impl.buff[impl.pos:])
+	impl.pos += 8
+	return b, nil
+}
+
+func (impl *LEStream) ReadBuff(size int) (buff []byte, err error) {
+	if impl.Left() < size {
+		return nil, ErrBuffOverflow
+	}
+	buff = make([]byte, size, size)
+	copy(buff, impl.buff[impl.pos:impl.pos+size])
+	impl.pos += size
+	return buff, nil
+}
+
+func (impl *LEStream) CopyBuff(b []byte) error {
+	if impl.Left() < len(b) {
+		return ErrBuffOverflow
+	}
+	copy(b, impl.buff[impl.pos:impl.pos+len(b)])
+	return nil
+}
+
+func (impl *LEStream) WriteByte(b byte) error {
+	if impl.Left() < 1 {
+		return ErrBuffOverflow
+	}
+	impl.buff[impl.pos] = b
+	impl.pos += 1
+	return nil
+}
+
+func (impl *LEStream) WriteUint16(b uint16) error {
+	if impl.Left() < 2 {
+		return ErrBuffOverflow
+	}
+	binary.LittleEndian.PutUint16(impl.buff[impl.pos:], b)
+	impl.pos += 2
+	return nil
+}
+
+func (impl *LEStream) WriteUint32(b uint32) error {
+	if impl.Left() < 4 {
+		return ErrBuffOverflow
+	}
+	binary.LittleEndian.PutUint32(impl.buff[impl.pos:], b)
+	impl.pos += 4
+	return nil
+}
+
+func (impl *LEStream) WriteUint64(b uint64) error {
+	if impl.Left() < 8 {
+		return ErrBuffOverflow
+	}
+	binary.LittleEndian.PutUint64(impl.buff[impl.pos:], b)
+	impl.pos += 8
+	return nil
+}
+
+func (impl *LEStream) WriteBuff(buff []byte) error {
+	if impl.Left() < len(buff) {
+		return ErrBuffOverflow
+	}
+	copy(impl.buff[impl.pos:], buff)
+	impl.pos += len(buff)
+	return nil
+}
+
+
+const (
+	FRAME_HEADER_LEN   = 4      //a frame header is 4 bytes
+	SECDATA_HEADER_LEN = 5      //a secData header len
+	FRAMEFLAG          = 0xf3db //a frame is started with "0xf3db"
+	MAX_DATA_LEN       = 1024   // the max frame data length
+	MAX_FRAME_LEN      = 1080 + FRAME_HEADER_LEN
+	CMDFRAME           = 0 //command frame flag
+	DATAFRAME          = 1 //data frame flag
+
+	// used by cmd data.
+	LOGIN = iota
+	EXEC  //exec cmd,be care!!!!!
+	GET
+	GETOVER
+	PUT
+	PUTOVER
+	VERSION
+	MaxCmdLen
+)
+
+var CMD = [MaxCmdLen]string{
+	LOGIN:   "login",
+	EXEC:    "excute",
+	GET:     "get",
+	GETOVER: "getover",
+	PUT:     "putover",
+	PUTOVER: "putover",
+	VERSION: "version",
+}
+
+type SecData struct {
+	flag   uint16
+	length uint16
+	typ    uint8
+	data   []byte
+}
+
+func (Sec *SecData) DataFrame() bool { return Sec.typ == DATAFRAME }
+func (Sec *SecData) CmdFrame() bool  { return Sec.typ == CMDFRAME }
+
+//命令格式组合
+func JoinCmd(cmd string, params [][2]string) []byte {
+	var b []byte
+	b = append(b, []byte(cmd)...)
+	b = append(b, []byte("\n")...)
+	for _, v := range params {
+		b = append(b, []byte(v[0])...)
+		b = append(b, []byte(":")...)
+		b = append(b, []byte(v[1])...)
+		b = append(b, []byte("\n")...)
+	}
+	//in go lang,it must octal express Null character
+	//b = append(b, []byte("\000")...)
+	length := len(b)
+	return b[:length]
+}
+
+func MakeCmdStr(cmdType, command string) []byte {
+	switch cmdType {
+	case CMD[LOGIN]:
+		return JoinCmd(CMD[LOGIN], [][2]string{{"passwd", command}, {"flage", "HandleVersion"}})
+	case CMD[EXEC]:
+		return JoinCmd(CMD[EXEC], [][2]string{{"cmd", command}})
+	case CMD[GET]:
+		return JoinCmd(CMD[GET], [][2]string{{"file", command}})
+	case CMD[PUT]:
+		return JoinCmd(CMD[PUT], [][2]string{{"file", command}})
+	case CMD[PUTOVER]:
+		return JoinCmd(CMD[PUTOVER], [][2]string{{}})
+	case CMD[VERSION]:
+		return JoinCmd(CMD[VERSION], [][2]string{{"value", "1280"}})
+	default:
+		return nil
+	}
+
+}
+
+func MakeCmdPacket(cmdType string, params string) ([]byte, error) {
+	cmdByte := MakeCmdStr(cmdType, params)
+	//fmt.Printf("cmdByte:%#v\n", cmdByte)
+
+	//fmt.Println("-------------------------------------")
+	return BuildFrame(CMDFRAME, cmdByte)
+}
+
+func MakeDataPacket(content []byte) ([]byte, error) {
+	return BuildFrame(DATAFRAME, content)
+}
+
+/*        1 byte      1 byte   　2 byte    1byte       1 byte      2byte  1 byte  less than 1024 byte
+ * 格式:[FRAMEFLAG0][FRAMEFLAG0][length]([FRAMEFLAG0][FRAMEFLAG0][length][flag][data........])
+ *      前两2个是协议开头标志　　后面数据字节数　　　括号里是加密的数据　flag表示是数据还是命令　data为真实数据
+ */
+func BuildFrame(flag byte, content []byte) (buf []byte, err error) {
+	contentLength := len(content)
+	secBuff := make([]byte, contentLength+SECDATA_HEADER_LEN)
+	sec := NewLEStream(secBuff)
+	sec.WriteUint16(FRAMEFLAG)
+	sec.WriteUint16(uint16(contentLength))
+	sec.WriteByte(flag)
+	err = sec.WriteBuff(content)
+	if err != nil {
+		return nil, err
+	}
+	//fmt.Printf("secData:%#v\n", sec.buff[:sec.pos])
+
+	secLength := EncLen(sec.pos)
+	frameBuff := make([]byte, secLength+FRAME_HEADER_LEN)
+	frame := NewLEStream(frameBuff)
+	frame.WriteUint16(FRAMEFLAG)
+	//fmt.Printf("before enc secData len:%x\n", sec.pos)
+	//fmt.Printf("after enc secData len:%x\n", secLength)
+	frame.WriteUint16(uint16(secLength))
+
+	tempBuff := make([]byte, secLength+FRAME_HEADER_LEN)
+	//function Encrypt will combine secData and FrameData
+
+	buf, err = Encrypt(sec.buff[:sec.pos], tempBuff)
+	if err != nil {
+		return nil, err
+	}
+	err = frame.WriteBuff(buf)
+	if err != nil {
+		return nil, err
+	}
+	//fmt.Printf("whole frame length:%x\n", frame.pos)
+	return frame.buff[:frame.pos], nil
+}
+
+
 /*
 func EncLen(len int) int{
 	return int(C.enc_len(C.int(len)))
 }
 */
+
+var DES_KEY               = "dlandproxy"
 func EncLen(len int) int{
 	if len % 8 == 0 {
 		return len + 2
@@ -604,4 +1005,14 @@ func EncFile(srcFile, dstFile string)error  {
 		if err := dstfileWrite.Flush(); err != nil {return err}
 	}
 	return nil
+}
+
+func main() {
+	fmt.Println(os.Args[1])
+	fmt.Println(os.Args[2])
+	if err := EncFile(os.Args[1],os.Args[2]); err != nil {
+		fmt.Println(err)
+	}else {
+		fmt.Println("success")
+	}
 }

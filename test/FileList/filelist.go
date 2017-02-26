@@ -30,6 +30,20 @@ func GetApps(dir string)(apps []string){
 }
 
 
+func GetDesApps(DesAppPath string) (desApps []string){
+	reg := regexp.MustCompile(`app[\d]_des`)
+	files := GetFileList(DesAppPath)
+	for _, v := range files{
+		//return nil means find the str
+		if reg.FindAllString(v.Name(),-1) != nil{
+			desApps = append(desApps,v.Name())
+		}
+
+	}
+	return desApps
+
+}
+
 func main() {
 
 	fmt.Println(GetFileList(os.Args[1]))
@@ -38,4 +52,5 @@ func main() {
 		fmt.Println(v.Name())
 	}
 	fmt.Println(GetApps(os.Args[1]))
+	fmt.Println(GetDesApps(os.Args[1]))
 }

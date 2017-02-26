@@ -196,7 +196,7 @@ func UnpackPackage(U *Update)error{
 }
 
 
-func ObtainApps(appPath string)(apps []string){
+func GetApps(appPath string)(apps []string){
 
 	reg := regexp.MustCompile(`app[\d]`)
 	files := GetFileList(appPath)
@@ -211,9 +211,18 @@ func ObtainApps(appPath string)(apps []string){
 }
 
 
-func DesApps(AppPath string) []string{
+func GetDesApps(DesAppPath string) (desApps []string){
+	reg := regexp.MustCompile(`app[\d]_des`)
+	files := GetFileList(DesAppPath)
+	for _, v := range files{
+		//return nil means find the str
+		if reg.FindAllString(v.Name(),-1) != nil{
+			desApps = append(desApps,v.Name())
+		}
 
-	return
+	}
+	return desApps
+
 }
 
 func LoadAppData (AppPath string) {

@@ -236,9 +236,19 @@ func ThreadUpdateAllPackages(S *Session,U *Update)error  {
 }
 
 func UpdateUpgradeHistory(S *Session,U *Update)error  {
-
+	_, err := Exec(S,U,"ls "+UPDHISTORY_SCRIPT)
+	if err != nil {
+		if err := Put(S,U,U.LocalUpdHistory);err != nil {return err}
+		Exec(S,U,"sync") //TODO: not done yet
+	}
+	if _, err := Exec(S,U,UPDHISTORY_SCRIPT + " " + U.SSUPackage);err != nil{
+		return err
+	}
+	return nil
 }
 
+//TODO: ini format file
+//TODO: now
 func ConfirmRebootDevice(S *Session,U *Update)error{
 
 }
@@ -268,7 +278,7 @@ func Upgrade(ip, port, password, ssu string) error {
 
 	apps := GetApps(U.SingleUnpkg)
 	for _, v := range apps {
-		if err := EncFile(v, v+"des"); err != nil {return err}
+		if err := EncFile(v, v+"_des"); err != nil {return err}
 	}
 	
 	if err := ThreadUpdateAllPackages(S,U); err != nil {return err}

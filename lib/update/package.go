@@ -13,6 +13,8 @@ import (
 	"io/ioutil"
 	"github.com/docker/docker/utils"
 	"regexp"
+	"strings"
+	"bufio"
 )
 
 var Flag uint16
@@ -229,8 +231,58 @@ func LoadAppData (AppPath string) {
 	return
 }
 
-func UpdateApps(S *Session,apps, path string) {
-	return
+func PutDesApp(S *Session,LocalFile, RemoteFile string) error {
+	if !IsPathExist(LocalFile) {
+		return fmt.Errorf("%s don't exist", LocalFile)
+	}
+	if DoCmd(S, CMD[PUT], RemoteFile) != nil {
+		return fmt.Errorf("DoCmd fail, put %s fail\n", RemoteFile)
+	}
+	file, err := os.Open(LocalFile)
+	if err != nil {return err}
+
+	defer file.Close()
+
+	buf := make([]byte, 1038)
+	bufRead := bufio.NewReader(file)
+
+	for{
+		n, err1 := bufRead.Read(buf)
+		if err1 != nil && err1 != io.EOF {
+			return err1
+		}
+		if 0 == n {
+			break
+		}
+		S.WritePacket(buf[:n])
+	}
+	if DoCmd(S, CMD[PUTOVER], "") != nil {
+		return fmt.Errorf("DoCmd fail, PUTOVER fail\n")
+	}
+	return nil
+}
+
+
+//如果desApps的路径包含有app就糟糕了　TODO: i will make it right later
+func UpdateApps(S *Session,U *Update,desApps string)error {
+	for _, desApp := range desApps{
+		app := strings.TrimSuffix(desApp,"_des")
+		appsh := strings.Replace(app,"app","appsh",1)
+		fmt.Println("uploading :",app)
+		if err := PutDesApp(S,app,"/stmp/app");err != nil {return err}
+		fmt.Println("put file %s success",app)
+		if err := Put(S,appsh,U.ServerAppSh);err != nil {return err}
+		fmt.Println("put file %s success",appsh)
+		fmt.Println("executing ",appsh)
+		msg, err := Exec(S,U,U.ServerAppSh)
+		if err := nil {
+			fmt.Println("executing %s fail",appsh)
+			fmt.Println("retrun message:",msg)
+			return err
+		}
+		fmt.Println("retrun message:",msg)
+	}
+	return nil
 }
 
 
@@ -243,7 +295,8 @@ func RestoreDefaultPriv()error{
 func UpdateSinglePacket(S *Session,U *Update)error{
 	if err := CheckUpdateCondition(S, U); err != nil {return err}
 	fmt.Println("appre exec success")
-
+	desApps := GetDesApps(U.SingleUnpkg)
+	if err := UpdateApps(S,U,desApps); err != nil {return err}
 	return nil
 }
 

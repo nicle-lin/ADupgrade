@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"github.com/go-ini/ini"
+	"path/filepath"
 )
 
 //if S.data contains string "result:1",it means command executed fail by AD
@@ -253,7 +254,18 @@ func UpdateUpgradeHistory(S *Session,U *Update)error  {
 //TODO: ini format file
 //TODO: now
 func ConfirmRebootDevice(S *Session,U *Update)error{
-
+	cfg, err := ini.Load(filepath.Join(U.SingleUnpkg,"package.conf"))
+	if err != nil {
+		return err
+	}
+	value, errkey := cfg.Section("restart").GetKey("needrestart")
+	if errkey != nil {
+		return errkey
+	}
+	if strings.ToLower(value) == "yes" {
+		if _,err := Exec(S,U,"reboot"); err !=nil {return err}
+	}
+	return nil
 }
 
 func Upgrade(ip, port, password, ssu string) error {

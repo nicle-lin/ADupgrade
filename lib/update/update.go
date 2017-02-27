@@ -30,7 +30,7 @@ func QueryVersion(S *Session) bool {
 func VersionResult(S *Session) {
 	reg := regexp.MustCompile(`version:[\d]+`)
 	str := reg.FindAllString(string(S.data), -1)[0]
-	S.SerVersion = int(strings.Split(str, ":")[1])
+	S.SerVersion = strings.Split(str, ":")[1]
 }
 
 //Get AD Version
@@ -61,7 +61,7 @@ func IsArmChip(appVersion []byte) bool {
 
 //Get file from Server, and download,write it to the LocalFile
 func Get(S *Session, RemoteFile, LocalFile string) ([]byte, error) {
-	if !DoCmd(S, CMD[GET], RemoteFile) {
+	if DoCmd(S, CMD[GET], RemoteFile) != nil {
 		return nil, fmt.Errorf("the server can't send the file:%s.check the file exists.\n", RemoteFile)
 	}
 	var allData []byte
@@ -110,14 +110,14 @@ func Exec(S *Session, U *Update, Command string) (string, error) {
 	doRet := DoCmd(S, CMD[EXEC], Command)
 	getReturn, err := Get(S, U.TempRetFile, "")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	getResult, err1 := Get(S, U.TempRstFile, "")
 	if err1 != nil {
-		return nil, err1
+		return "", err1
 	}
 	if strings.TrimSpace(string(getReturn)) != "0" || doRet != nil {
-		return nil, fmt.Errorf("DoCmd error or return result is 0\n")
+		return "", fmt.Errorf("DoCmd error or return result is 0\n")
 	}
 	return string(getResult), nil
 }
@@ -182,16 +182,16 @@ func Login(ip, port, passwd string) (*Session, error) {
 	}
 	S := new(Session)
 	S.Conn = conn
-	if !DoCmd(S, CMD[LOGIN], passwd) {
-		return fmt.Errorf("Login fail,please check the passwd\n")
+	if DoCmd(S, CMD[LOGIN], passwd) != nil {
+		return nil,fmt.Errorf("Login fail,please check the passwd\n")
 	}
 	if QueryVersion(S) {
-		if !DoCmd(S, CMD[VERSION], "") {
+		if DoCmd(S, CMD[VERSION], "") != nil {
 			return nil, fmt.Errorf("DoCmd %s fail\n", CMD[VERSION])
 		}
 		VersionResult(S)
 	} else {
-		S.SerVersion = 300
+		S.SerVersion = "300"
 		fmt.Println("server version lower than v300. nothing to do.")
 	}
 	fmt.Println("login success")
@@ -242,7 +242,7 @@ func ThreadUpdateAllPackages(S *Session,U *Update)error  {
 func UpdateUpgradeHistory(S *Session,U *Update)error  {
 	_, err := Exec(S,U,"ls "+UPDHISTORY_SCRIPT)
 	if err != nil {
-		if err := Put(S,U,U.LocalUpdHistory);err != nil {return err}
+		if err := Put(S,U.LocalUpdHistory,UPDHISTORY_SCRIPT);err != nil {return err}
 		Exec(S,U,"sync") //TODO: not done yet
 	}
 	if _, err := Exec(S,U,UPDHISTORY_SCRIPT + " " + U.SSUPackage);err != nil{
@@ -258,10 +258,8 @@ func ConfirmRebootDevice(S *Session,U *Update)error{
 	if err != nil {
 		return err
 	}
-	value, errkey := cfg.Section("restart").GetKey("needrestart")
-	if errkey != nil {
-		return errkey
-	}
+	value := cfg.Section("restart").Key("needrestart").String()
+	
 	if strings.ToLower(value) == "yes" {
 		if _,err := Exec(S,U,"reboot"); err !=nil {return err}
 	}

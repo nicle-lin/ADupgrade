@@ -84,9 +84,9 @@ import (
 */
 
 var (
-	EXEC_TIMEOUT    = 60
-	UPD_TIMEOUT     = 1800
-	CONN_TIMEOUT    = 120
+	EXEC_TIMEOUT  time.Duration  = 60
+	UPD_TIMEOUT  time.Duration   = 1800
+	CONN_TIMEOUT    time.Duration = 120
 	APPVERSION_FILE = "/app/appversion"
 	CATMAC          = "cat /usr/sbin/macaddr"
 	ARM_LINUX_BASIC = [6]string{"/var/dlancmd/tempexec", "/var/dlancmd/result", "/var/upd_sh_err.log", "/var/dlancmd/return", "/etc/config/passwd", "/var/dlancmd/compose.sh"}
@@ -174,12 +174,25 @@ func GetFileList(dir string) []os.FileInfo{
 	return files
 }
 
-func FtpDownloadSSUPackage(ssuPath string) error{
+//TODO: not done yet
+func FtpDownloadSSUPackage(ssuPath ,user,password string) error{
+
+
 	//TODO: download package from ftp server
 	// ftp://200.200.145.15/AD6.5.ssu
 	str := strings.Split(ssuPath,"//")
 	host := strings.Split(str[1],"/")[0]
+	pwd := "/ad6.6"
 	ftp,err := goftp.Connect(host)
+	if err != nil {return  err }
+
+	if err := ftp.Login(user,password);err != nil {return err}
+
+	if err := ftp.Cwd(pwd);err != nil {return err}
+
+	defer ftp.Close()
+
+
 	return nil
 }
 

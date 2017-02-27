@@ -12,7 +12,7 @@ type Address struct {
 }
 
 type PeerInfo struct {
-	SerVersion int
+	SerVersion string
 	AppVersion string
 }
 
@@ -20,7 +20,7 @@ type SSU struct {
 	Flag       bool   //Same Version SSU packet has been unpack or not
 	Version    string //AD version
 	SSUPackage string //SSU packet name
-	SSUType int8    /*PACKAGE_TYPE = 1 RESTORE_TYPE = 2 EXECUTE_TYPE  = 3 AUTOBAK_NUMS  = 10 */
+	SSUType int    /*PACKAGE_TYPE = 1 RESTORE_TYPE = 2 EXECUTE_TYPE  = 3 AUTOBAK_NUMS  = 10 */
 }
 
 type Unpack struct {

@@ -52,6 +52,7 @@ func (S *Session) unpackSSU(ssu string) {
 
 }
 
+/*
 func UnpackSSU() {
 	if !GetFlag() {
 		IncFlag()
@@ -64,6 +65,7 @@ func UnpackSSU() {
 
 	IncFlag()
 }
+*/
 
 func unpack(packPath,destPath,unpackTool,logFile string) error{
 	if runtime.GOOS	 == "windows"{
@@ -262,7 +264,7 @@ func PutDesApp(S *Session,LocalFile, RemoteFile string) error {
 
 
 //如果desApps的路径包含有app就糟糕了　TODO: i will make it right later
-func UpdateApps(S *Session,U *Update,desApps string)error {
+func UpdateApps(S *Session,U *Update,desApps []string)error {
 	for _, desApp := range desApps{
 		app := strings.TrimSuffix(desApp,"_des")
 		appsh := strings.Replace(app,"app","appsh",1)
@@ -426,9 +428,10 @@ func ComposePackage(ssuPath string) bool{
 	}
 }
 
+//TODO: not done yet
 //用于检查升级包是否为组合升级包，目前AD不是组合的
 func InitComposePackageArr(ssuPath string) []string {
-	return
+	return nil
 }
 
 func SinglePackageMd5(ssuPath string) error {
@@ -450,14 +453,14 @@ func PrepareUpgrade(S *Session, U *Update) error {
 		return fmt.Errorf("now update the package:%s,begin at %v\n ....",U.SSUPackage,U.UpdateTime)
 	}
 	if err := InitEnvironment(U); err != nil {return err}
-	if err := FtpDownloadSSUPackage(U.SSUPackage); err != nil {return err}
+	if err := FtpDownloadSSUPackage("admin","admin",U.SSUPackage); err != nil {return err}
 	if !IsPathExist(U.SSUPackage){
 		return fmt.Errorf("can't find the SSU package,please check it\n");
 	}
 
 	if ComposePackage(U.SSUPackage){
 		InitComposePackageArr(U.SSUPackage) //TODO: not done yet
-	}else if SinglePackageMd5(U.SSUPackage){
+	}else if SinglePackageMd5(U.SSUPackage) == nil{
 		//TODO:
 		/*
 		@package_arr = Array.new

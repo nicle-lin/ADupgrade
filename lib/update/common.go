@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
 	"io/ioutil"
@@ -13,6 +11,8 @@ import (
 	"bufio"
 	"crypto/md5"
 	"io"
+	"github.com/dutchcoders/goftp"
+	"strings"
 )
 
 /*
@@ -175,7 +175,11 @@ func GetFileList(dir string) []os.FileInfo{
 }
 
 func FtpDownloadSSUPackage(ssuPath string) error{
-	//TODO: download package from ftp server\
+	//TODO: download package from ftp server
+	// ftp://200.200.145.15/AD6.5.ssu
+	str := strings.Split(ssuPath,"//")
+	host := strings.Split(str[1],"/")[0]
+	ftp,err := goftp.Connect(host)
 	return nil
 }
 

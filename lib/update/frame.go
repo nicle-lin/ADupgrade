@@ -41,7 +41,7 @@ var CMD = [MaxCmdLen]string{
 type SecData struct {
 	flag   uint16
 	length uint16
-	typ    uint8
+	typ    byte
 	data   []byte
 }
 

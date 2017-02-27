@@ -453,7 +453,7 @@ func PrepareUpgrade(S *Session, U *Update) error {
 		return fmt.Errorf("now update the package:%s,begin at %v\n ....",U.SSUPackage,U.UpdateTime)
 	}
 	if err := InitEnvironment(U); err != nil {return err}
-	if err := FtpDownloadSSUPackage("admin","admin",U.SSUPackage); err != nil {return err}
+	if err := FtpDownloadSSUPackage(U.SSUPackage,"admin","admin"); err != nil {return err}
 	if !IsPathExist(U.SSUPackage){
 		return fmt.Errorf("can't find the SSU package,please check it\n");
 	}

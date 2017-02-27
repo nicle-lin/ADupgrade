@@ -177,7 +177,9 @@ func GetFileList(dir string) []os.FileInfo{
 //TODO: not done yet
 func FtpDownloadSSUPackage(ssuPath ,user,password string) error{
 
-
+	if IsPathExist(ssuPath){
+		return nil
+	}
 	//TODO: download package from ftp server
 	// ftp://200.200.145.15/AD6.5.ssu
 	str := strings.Split(ssuPath,"//")

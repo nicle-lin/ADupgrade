@@ -115,6 +115,8 @@ func (S *Session) ReadPacket() error {
 		//return nil,fmt.Errorf("dec sec data error:\n",err)
 		return fmt.Errorf("dec sec data error %s:\n", err)
 	}
+	fmt.Println("dec sec data:",string(decSecData))
+
 
 	secDataHeader := NewLEStream(decSecData)
 	secDataFlag, _ := secDataHeader.ReadUint16()
@@ -126,19 +128,26 @@ func (S *Session) ReadPacket() error {
 	dataLen, _ := secDataHeader.ReadUint16()
 	secDataType, _ := secDataHeader.ReadByte()
 	realDataLen := uint16(len(decSecData[secDataHeader.pos:]))
+	fmt.Println("##############################################")
+
 	if dataLen != realDataLen {
 		//fmt.Printf("sec Data len is wrong:0x%x\n", dataLen, "receive data len:ox%x\n", realDataLen)
 		//return nil, fmt.Errorf("sec Data len is wrong:0x%x\n",dataLen,"receive data len:ox%x\n",realDataLen)
 		return fmt.Errorf("sec Data len is wrong:0x%x\n,receive data len:ox%x\n", dataLen, realDataLen)
 	}
+	fmt.Println("----------------befor pos------------------------")
 	if secDataType != CMDFRAME && secDataType != DATAFRAME {
 		fmt.Printf("sec data type is wrong:0x%x\n", secDataType)
 		//return nil, fmt.Errorf("sec data type is wrong:0x%x\n",secDataType)
 		return fmt.Errorf("sec data type is wrong:0x%x\n", secDataType)
 	}
+	fmt.Println("################almost to pos ################################")
 	S.typ = secDataType
 	S.length = secDataLen
+
+	fmt.Println("###############pos#######################")
 	S.data = decSecData[secDataHeader.pos:]
+	fmt.Println("#################read data seen like is ok#############")
 	return nil
 }
 

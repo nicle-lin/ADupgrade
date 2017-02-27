@@ -259,7 +259,7 @@ func ConfirmRebootDevice(S *Session,U *Update)error{
 		return err
 	}
 	value := cfg.Section("restart").Key("needrestart").String()
-	
+
 	if strings.ToLower(value) == "yes" {
 		if _,err := Exec(S,U,"reboot"); err !=nil {return err}
 	}
@@ -281,10 +281,8 @@ func Upgrade(ip, port, password, ssu string) error {
 
 	U := InitClient(appVersion)
 	U.SSUPackage = ssu
-	err = UpgradeCheck(S, U)
-	if err != nil {
-		return err
-	}
+	if err := UpgradeCheck(S, U);err != nil {return err}
+
 	if PrepareUpgrade(S, U) != nil {
 		return err
 	}

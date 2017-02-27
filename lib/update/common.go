@@ -213,7 +213,7 @@ func md5SumString(data []byte) string {
 func Md5Sum(arg interface{},offset ...int64) string {
 	switch v := arg.(type) {
 	case string:
-		return md5SumFile(v,offset)
+		return md5SumFile(v,offset...)
 	case []byte:
 		return md5SumString(v)
 	default:

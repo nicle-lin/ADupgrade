@@ -7,11 +7,9 @@ import (
 	"time"
 	"os"
 	"io"
-	"crypto/md5"
 	"runtime"
 	"os/exec"
 	"io/ioutil"
-	"github.com/docker/docker/utils"
 	"regexp"
 	"strings"
 	"bufio"
@@ -89,11 +87,11 @@ func unpack(packPath,destPath,unpackTool,logFile string) error{
 	if err := ioutil.WriteFile(logFile,data,0664);err != nil {
 		fmt.Println("unpack log can't write it to logfile:",err)
 	}
-	if err := new.Wait(); err != nil {
-		return err
-	}else{
+	if err := new.Wait(); err == nil {
 		fmt.Println("unpack success")
 		return nil
+	}else{
+		fmt.Println("use new password to unpack fail:",err)
 	}
 
 
@@ -270,13 +268,13 @@ func UpdateApps(S *Session,U *Update,desApps string)error {
 		appsh := strings.Replace(app,"app","appsh",1)
 		fmt.Println("uploading :",app)
 		if err := PutDesApp(S,app,"/stmp/app");err != nil {return err}
-		fmt.Println("put file %s success",app)
+		fmt.Println("put file success:",app)
 		if err := Put(S,appsh,U.ServerAppSh);err != nil {return err}
-		fmt.Println("put file %s success",appsh)
+		fmt.Println("put file success:",appsh)
 		fmt.Println("executing ",appsh)
 		msg, err := Exec(S,U,U.ServerAppSh)
-		if err := nil {
-			fmt.Println("executing %s fail",appsh)
+		if err != nil {
+			fmt.Println("executing fail:",appsh)
 			fmt.Println("retrun message:",msg)
 			return err
 		}
@@ -447,9 +445,9 @@ func SinglePackageMd5(ssuPath string) error {
 
 
 func PrepareUpgrade(S *Session, U *Update) error {
-	fmt.Println("init to upgrade or restore  the package:%s", U.SSUPackage)
+	fmt.Println("init to upgrade or restore  the package:", U.SSUPackage)
 	if U.UpdatingFlag && (time.Now().Sub(U.UpdateTime) < UPD_TIMEOUT * time.Second ) {
-		return fmt.Errorf("now update the package:%s,begin at %v\n ....",U.UpdateTime)
+		return fmt.Errorf("now update the package:%s,begin at %v\n ....",U.SSUPackage,U.UpdateTime)
 	}
 	if err := InitEnvironment(U); err != nil {return err}
 	if err := FtpDownloadSSUPackage(U.SSUPackage); err != nil {return err}

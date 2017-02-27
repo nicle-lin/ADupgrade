@@ -9,6 +9,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"github.com/go-ini/ini"
 )
 
 //if S.data contains string "result:1",it means command executed fail by AD
@@ -85,8 +86,8 @@ func Get(S *Session, RemoteFile, LocalFile string) ([]byte, error) {
 func DoCmd(S *Session, cmdType, params string) error {
 	cmdStr, err := MakeCmdPacket(cmdType, params)
 	if err != nil {
-		fmt.Errorf("MakeCmdPacket error:", err)
-		return
+		return fmt.Errorf("MakeCmdPacket error:%v", err)
+
 	}
 	err = S.WritePacket(cmdStr)
 	if err != nil {
@@ -232,7 +233,9 @@ func ThreadUpdateAllPackages(S *Session,U *Update)error  {
 		if _, err:= Exec(S,U,U.Compose); err != nil {return err}
 	default:
 		fmt.Println("unknown type packet:",U.SSUType)
+		return fmt.Errorf("unknown type packet %s:",U.SSUType)
 	}
+	return nil
 }
 
 func UpdateUpgradeHistory(S *Session,U *Update)error  {

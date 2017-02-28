@@ -234,7 +234,7 @@ func ThreadUpdateAllPackages(S *Session,U *Update)error  {
 		if _, err:= Exec(S,U,U.Compose); err != nil {return err}
 	default:
 		fmt.Println("unknown type packet:",U.SSUType)
-		return fmt.Errorf("unknown type packet %s:",U.SSUType)
+		return fmt.Errorf("unknown type packet %d:",U.SSUType)
 	}
 	return nil
 }

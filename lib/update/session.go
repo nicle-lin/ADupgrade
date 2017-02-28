@@ -147,28 +147,28 @@ func (S *Session) ReadPacket() error {
 		return errSecDataType
 	}
 	realDataLen := uint16(len(decSecData[secDataHeader.pos:]))
-	fmt.Println("##############################################")
+	//fmt.Println("##############################################")
 
 	if dataLen != realDataLen {
 		//fmt.Printf("sec Data len is wrong:0x%x\n", dataLen, "receive data len:ox%x\n", realDataLen)
 		//return nil, fmt.Errorf("sec Data len is wrong:0x%x\n",dataLen,"receive data len:ox%x\n",realDataLen)
 		return fmt.Errorf("sec Data len is wrong:0x%x\n,receive data len:ox%x\n", dataLen, realDataLen)
 	}
-	fmt.Println("----------------befor pos------------------------")
+	//fmt.Println("----------------befor pos------------------------")
 	if secDataType != CMDFRAME && secDataType != DATAFRAME {
 		fmt.Printf("sec data type is wrong:0x%x\n", secDataType)
 		//return nil, fmt.Errorf("sec data type is wrong:0x%x\n",secDataType)
 		return fmt.Errorf("sec data type is wrong:0x%x\n", secDataType)
 	}
-	fmt.Println("################almost to pos ################################")
-	fmt.Printf("##############################secDataType:0x%x\n",secDataType)
+	//fmt.Println("################almost to pos ################################")
+	//fmt.Printf("##############################secDataType:0x%x\n",secDataType)
 	S.typ = secDataType
 	S.length = secDataLen
 
-	fmt.Println("###############pos#######################")
-	fmt.Println("decSecData[secDataHeader.pos:]:",decSecData[secDataHeader.pos:])
+	//fmt.Println("###############pos#######################")
+	//fmt.Println("decSecData[secDataHeader.pos:]:",decSecData[secDataHeader.pos:])
 	S.data = secDataHeader.buff[secDataHeader.pos:]
-	fmt.Println("#################read data seen like is ok#############")
+	//fmt.Println("#################read data seen like is ok#############")
 	return nil
 }
 

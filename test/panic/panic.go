@@ -1,22 +1,28 @@
 package main
 
-import "net"
+import (
+	"net"
+	"fmt"
+)
 
 type SecData struct {
 	flag   uint16
 	length uint16
-	typ    byte
-	data   []byte
+
 }
 type Session struct {
 	Conn net.Conn
 	//*PeerInfo
 	*SecData
 }
-//嵌套的struct如果没有初始化就直接赋值会panic
+
 func main() {
 	S := new(Session)
 	var conn net.Conn
 	S.Conn = conn
-	S.flag = 16
+	//S.flag = 16  //嵌套的struct如果没有初始化就直接赋值会panic
+
+	SS := &Session{Conn:conn,SecData:&SecData{}}
+	SS.flag = 16
+	fmt.Println("flag",SS.flag)
 }

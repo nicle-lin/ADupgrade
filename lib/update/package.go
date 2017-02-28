@@ -308,8 +308,12 @@ func CheckUpdateCondition(S *Session,U *Update)error{
 	return nil
 }
 
+func newUpdate()*Update{
+	return &Update{SSU:&SSU{},Package:&Package{},Unpack:&Unpack{},Cfg:&Cfg{}}
+}
+
 func InitClient(appVersion []byte) *Update {
-	U := new(Update)
+	U := newUpdate()
 	U.FolderPrefix = GetRandomString(32)
 	U.CurrentWorkFolder = GetCurrentDirectory()
 	if IsArmChip(appVersion) {

@@ -1,8 +1,5 @@
 package update
 
-import (
-	"fmt"
-)
 
 /* base frame
 * a frame begin with "0xDB0xF3".....
@@ -87,9 +84,9 @@ func MakeCmdStr(cmdType, command string) []byte {
 
 func MakeCmdPacket(cmdType string, params string) ([]byte, error) {
 	cmdByte := MakeCmdStr(cmdType, params)
-	fmt.Printf("cmdByte:%#v\n", cmdByte)
+	//fmt.Printf("cmdByte:%#v\n", cmdByte)
 
-	fmt.Println("-------------------------------------")
+	//fmt.Println("-------------------------------------")
 	return BuildFrame(CMDFRAME, cmdByte)
 }
 
@@ -112,14 +109,14 @@ func BuildFrame(flag byte, content []byte) (buf []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("secData:%#v\n", sec.buff[:sec.pos])
+	//fmt.Printf("secData:%#v\n", sec.buff[:sec.pos])
 
 	secLength := EncLen(sec.pos)
 	frameBuff := make([]byte, secLength+FRAME_HEADER_LEN)
 	frame := NewLEStream(frameBuff)
 	frame.WriteUint16(FRAMEFLAG)
-	fmt.Printf("before enc secData len:%x\n", sec.pos)
-	fmt.Printf("after enc secData len:%x\n", secLength)
+	//fmt.Printf("before enc secData len:%x\n", sec.pos)
+	//fmt.Printf("after enc secData len:%x\n", secLength)
 	frame.WriteUint16(uint16(secLength))
 
 	tempBuff := make([]byte, secLength+FRAME_HEADER_LEN)
@@ -133,6 +130,6 @@ func BuildFrame(flag byte, content []byte) (buf []byte, err error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("whole frame length:%x\n", frame.pos)
+	//fmt.Printf("whole frame length:%x\n", frame.pos)
 	return frame.buff[:frame.pos], nil
 }

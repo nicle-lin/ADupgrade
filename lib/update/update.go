@@ -114,10 +114,10 @@ func Exec(S *Session, U *Update, Command string) (string, error) {
 	}
 	getResult, err1 := Get(S, U.TempRstFile, "")
 	if err1 != nil {
-		return "", err1
+		return string(getResult), err1
 	}
 	if strings.TrimSpace(string(getReturn)) != "0" || doRet != nil {
-		return "", fmt.Errorf("DoCmd error or return result is 0\n")
+		return string(getResult), fmt.Errorf("DoCmd error or return result is 0\n")
 	}
 	return string(getResult), nil
 }
@@ -175,13 +175,17 @@ func GetFile(ip, passwd, port, LocalFile, RemoteFile string) error {
 	return err
 }
 
+func newSession(conn net.Conn)*Session{
+	return &Session{Conn:conn,PeerInfo:&PeerInfo{},SecData:&SecData{}}
+}
+
+
 func Login(ip, port, passwd string) (*Session, error) {
 	conn, err := net.Dial("tcp4", ip+":"+port)
 	if err != nil {
 		return nil, err
 	}
-	S := new(Session)
-	S.Conn = conn
+	S := newSession(conn)
 	if DoCmd(S, CMD[LOGIN], passwd) != nil {
 		return nil,fmt.Errorf("Login fail,please check the passwd\n")
 	}
@@ -210,13 +214,13 @@ func UpgradeCheck(S *Session, U *Update) error {
 	//execute /usr/sbin/updatercheck.sh, check it pass or fail
 	msgVersion, resultVersion := Exec(S, U, UPDATE_CHECK_SCRIPT)
 	if resultVersion != nil {
-		return fmt.Errorf("Upgrade failed!!!,error msg:%s", msgVersion)
+		return fmt.Errorf("Upgradecheck failed!!!,exec /usr/sbin/updatercheck.sh,error msg:%s", msgVersion)
 	}
 
 	//check upgrade sn valid or invalid
 	msgSn, resultSn := Exec(S, U, CHECK_UPGRADE_SN)
 	if resultSn != nil {
-		return fmt.Errorf("Upgrade failed!!!,error msg:%s", msgSn)
+		return fmt.Errorf("Upgradecheck failed!!!,exec /app/usr/sbin/checkupdsn.sh,error msg:%s", msgSn)
 	}
 	return nil
 }
@@ -283,9 +287,7 @@ func Upgrade(ip, port, password, ssu string) error {
 	U.SSUPackage = ssu
 	if err := UpgradeCheck(S, U);err != nil {return err}
 
-	if PrepareUpgrade(S, U) != nil {
-		return err
-	}
+	if err := PrepareUpgrade(S, U); err != nil {return err}
 
 	apps := GetApps(U.SingleUnpkg)
 	for _, v := range apps {

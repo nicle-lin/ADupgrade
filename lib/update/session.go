@@ -89,8 +89,14 @@ func (S *Session) ReadPacket() error {
 		return fmt.Errorf("frame len is wrong:#%#v\n", n)
 	}
 	frameHeader := NewLEStream(frameHeaderBuf)
-	frameFlag, _ := frameHeader.ReadUint16()
-	secDataLen, _ := frameHeader.ReadUint16()
+	frameFlag, errFlag := frameHeader.ReadUint16()
+	if errFlag != nil {
+		return errFlag
+	}
+	secDataLen, errDataLen := frameHeader.ReadUint16()
+	if errDataLen != nil {
+		return errDataLen
+	}
 	if frameFlag != FRAMEFLAG {
 		fmt.Printf("frameflage is wrong:0x%x", frameFlag)
 		//return nil, fmt.Errorf("frameflage is wrong:#%#v\n",frameFlag)
@@ -119,14 +125,23 @@ func (S *Session) ReadPacket() error {
 
 
 	secDataHeader := NewLEStream(decSecData)
-	secDataFlag, _ := secDataHeader.ReadUint16()
+	secDataFlag, errSecDataFlag := secDataHeader.ReadUint16()
+	if errSecDataFlag != nil {
+		return errSecDataFlag
+	}
 	if secDataFlag != FRAMEFLAG {
 		fmt.Printf("sec Data flag is wrong:0x%x\n", secDataFlag)
 		//return nil,fmt.Errorf("sec Data flag is wrong:0x%x\n",secDataFlag)
 		return fmt.Errorf("sec Data flag is wrong:0x%x\n", secDataFlag)
 	}
-	dataLen, _ := secDataHeader.ReadUint16()
-	secDataType, _ := secDataHeader.ReadByte()
+	dataLen, errSecDataLen := secDataHeader.ReadUint16()
+	if errSecDataLen != nil {
+		return errSecDataLen
+	}
+	secDataType, errSecDataType := secDataHeader.ReadByte()
+	if errSecDataType != nil {
+		return errSecDataType
+	}
 	realDataLen := uint16(len(decSecData[secDataHeader.pos:]))
 	fmt.Println("##############################################")
 

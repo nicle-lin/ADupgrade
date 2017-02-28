@@ -191,7 +191,7 @@ func FtpDownloadSSUPackage(ssuPath ,user,password string) error{
 	if err := ftp.Login(user,password);err != nil {return err}
 
 	if err := ftp.Cwd(pwd);err != nil {return err}
-	ftp.Stor()
+	//ftp.Stor()
 	defer ftp.Close()
 
 

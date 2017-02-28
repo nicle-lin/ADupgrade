@@ -79,9 +79,11 @@ type Update struct {
 
 //read data from peer and decrypt data, and return data
 func (S *Session) ReadPacket() error {
+	//step 1: 分配frame长度的大小的空间
 	frameHeaderBuf := make([]byte, FRAME_HEADER_LEN)
 	var n int
 	var err error
+	//step 2:　读取frame长度大小的数据
 	n, err = S.Conn.Read(frameHeaderBuf)
 	if n != FRAME_HEADER_LEN || err != nil {
 		fmt.Println("read frame len > Max frame len")
@@ -107,13 +109,15 @@ func (S *Session) ReadPacket() error {
 		//return nil, fmt.Errorf("sec data len is wrong:#%#v\n",secDataLen)
 		return fmt.Errorf("sec data len is wrong:#%#v\n", secDataLen)
 	}
-
+	//step 3: 分配加了密的sec Data的长度的空间
 	encSecData := make([]byte, secDataLen)
 	n, err = S.Conn.Read(encSecData)
 
 	fmt.Printf("read frame enc data:%#v\n", encSecData)
 
 	var decSecData []byte
+	//step 4: 由于暂时没法知道解密之后的数据是多大，所以直接先分配最大的
+	//TODO:   当然是可以通过EncLen这个函数反过来推知，暂时不做　　
 	outSecData := make([]byte, MAX_DATA_LEN)
 	decSecData, err = Decrypt(encSecData, outSecData)
 	if err != nil {
@@ -157,11 +161,13 @@ func (S *Session) ReadPacket() error {
 		return fmt.Errorf("sec data type is wrong:0x%x\n", secDataType)
 	}
 	fmt.Println("################almost to pos ################################")
+	fmt.Printf("##############################secDataType:0x%x\n",secDataType)
 	S.typ = secDataType
 	S.length = secDataLen
 
 	fmt.Println("###############pos#######################")
-	S.data = decSecData[secDataHeader.pos:]
+	fmt.Println("decSecData[secDataHeader.pos:]:",decSecData[secDataHeader.pos:])
+	S.data = secDataHeader.buff[secDataHeader.pos:]
 	fmt.Println("#################read data seen like is ok#############")
 	return nil
 }

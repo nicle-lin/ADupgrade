@@ -559,7 +559,7 @@ func Encrypt(inbuf []byte,outbuf []byte)(outbyte []byte,err error){
 }
 
 //int dec(const char* pass, unsigned char *inbuf, int inlen, unsigned char *outbuf, int outlen)
-func Decrypt(inbuf []byte,outbuf []byte)(outbyte []byte, err error){
+func Decrypt(inbuf []byte,outbuf []byte)( []byte, error){
 	passptr := C.CString(DES_KEY)
 	inbufptr := C.CBytes(inbuf)
 	outbufptr  := C.CBytes(outbuf)
@@ -567,10 +567,10 @@ func Decrypt(inbuf []byte,outbuf []byte)(outbyte []byte, err error){
 	var outlen C.int
 	outlen = C.dec(passptr,(*C.uchar)(inbufptr),C.int(inlen),(*C.uchar)(outbufptr),outlen)
 
-	len := int(outlen)
-	if len != -1{
+	length := int(outlen)
+	if length != -1{
 		outbuf = C.GoBytes(outbufptr,outlen)
-		return outbuf[:len],nil
+		return outbuf[:length],nil
 	}else {
 		return nil,fmt.Errorf("decrypt fail")
 	}

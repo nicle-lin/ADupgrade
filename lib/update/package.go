@@ -309,7 +309,8 @@ func CheckUpdateCondition(S *Session,U *Update)error{
 }
 
 func newUpdate()*Update{
-	return &Update{SSU:&SSU{},Package:&Package{},Unpack:&Unpack{},Cfg:&Cfg{}}
+	ssuInfo := make([]SSUSlice,1)
+	return &Update{SSU:&SSU{SSUInfo:ssuInfo},Package:&Package{},Unpack:&Unpack{},Cfg:&Cfg{}}
 }
 
 func InitClient(appVersion []byte) *Update {
@@ -471,7 +472,12 @@ func PrepareUpgrade(S *Session, U *Update) error {
 		packhash = {"packet" => now_package, "type" => "1"}
 		@package_arr<<packhash
 		*/
-		U.SSUType = PACKAGE_TYPE
+		var ssuInfo SSUSlice
+		ssuInfo.SSUPacket = U.SSUPackage
+		ssuInfo.SSUType = PACKAGE_TYPE
+		U.SSUInfo = append(U.SSUInfo,ssuInfo)
+
+		U.SSUType = PACKAGE_TYPE //TODO: it will be abandoned
 	}else {
 		return fmt.Errorf("The package is not a valid package,please check first. if your use a ftp path,please download it to local and try again.")
 	}

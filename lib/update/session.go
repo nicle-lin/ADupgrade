@@ -18,7 +18,7 @@ type PeerInfo struct {
 
 type SSUSlice struct {
 	SSUPacket string
-	SSUType string
+	SSUType int
 }
 
 type SSU struct {

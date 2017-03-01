@@ -44,19 +44,19 @@ func GetAppVersion(S *Session, appVersion []byte) {
 func IsArmChip(appVersion []byte) bool {
 	str := strings.ToLower(string(appVersion))
 	if strings.Contains(str, "-ac-") || strings.Contains(str, "sinfor-m") || strings.Contains(str, "-ad-") {
-		return true
+		return false
 	}
 	if strings.Contains(str, "-bm-") || strings.Contains(str, "-bc-") || strings.Contains(str, "-iam") {
-		return true
+		return false
 	}
 
 	if strings.Contains(str, "-nag") || strings.Contains(str, "sinfor--") || strings.Contains(str, "sangfor--") {
-		return true
-	}
-	if strings.Contains(str, "ar") || strings.Contains(str, "xp") || strings.Contains(str, "plus") {
 		return false
 	}
-	return false
+	if strings.Contains(str, "ar") || strings.Contains(str, "xp") || strings.Contains(str, "plus") {
+		return true
+	}
+	return false //default is not arm chip
 }
 
 //Get file from Server, and download,write it to the LocalFile
@@ -207,9 +207,14 @@ func Logout(S *Session) error {
 }
 
 func UpgradeCheck(S *Session, U *Update) error {
-	_, err := Exec(S, U, "ls "+UPDATE_CHECK_SCRIPT)
+	msg, err := Exec(S, U, "ls "+UPDATE_CHECK_SCRIPT)
 	if err != nil {
-		Put(S, U.LocalUpdCheck, UPDATE_CHECK_SCRIPT)
+		fmt.Println("exec ls "+UPDATE_CHECK_SCRIPT + " fail:",err)
+		fmt.Println("exec ls "+UPDATE_CHECK_SCRIPT + " fail:",msg)
+		if err := Put(S, U.LocalUpdCheck, UPDATE_CHECK_SCRIPT);err != nil {
+			fmt.Printf("Put file %s to server %s fail,the error msg is:%s",U.LocalUpdCheck,UPDATE_CHECK_SCRIPT,err)
+			return fmt.Errorf("Put file %s to server %s fail,the error msg is:%s",U.LocalUpdCheck,UPDATE_CHECK_SCRIPT,err)
+		}
 	}
 	//execute /usr/sbin/updatercheck.sh, check it pass or fail
 	msgVersion, resultVersion := Exec(S, U, UPDATE_CHECK_SCRIPT)

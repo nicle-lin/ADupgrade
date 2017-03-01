@@ -325,11 +325,11 @@ func InitClient(appVersion []byte) *Update {
 		U.ServerAppRe, U.ServerAppSh = ARM_LINUX_UPDATE[0], ARM_LINUX_UPDATE[1]
 		U.ServerCfgPre, U.ServerCfgSh = ARM_LINUX_UPDATE[2], ARM_LINUX_UPDATE[3]
 
-		U.LocalBackSh = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/arm_bin/bakcfgsh")
-		U.LocalPreCfgSh = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/arm_bin/prercovcfgsh")
-		U.LocalCfgSh = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/arm_bin/rcovcfgsh")
-		U.LocalUpdHistory = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/arm_bin/updhistory.sh")
-		U.LocalUpdCheck = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/arm_bin/updatercheck.sh")
+		U.LocalBackSh = filepath.Join(U.CurrentWorkFolder,  "/arm_bin/bakcfgsh")
+		U.LocalPreCfgSh = filepath.Join(U.CurrentWorkFolder,  "/arm_bin/prercovcfgsh")
+		U.LocalCfgSh = filepath.Join(U.CurrentWorkFolder,  "/arm_bin/rcovcfgsh")
+		U.LocalUpdHistory = filepath.Join(U.CurrentWorkFolder,  "/arm_bin/updhistory.sh")
+		U.LocalUpdCheck = filepath.Join(U.CurrentWorkFolder,  "/arm_bin/updatercheck.sh")
 
 		fmt.Println("The device is a arm platform,init arm info.")
 	} else {
@@ -340,11 +340,11 @@ func InitClient(appVersion []byte) *Update {
 		U.ServerAppRe, U.ServerAppSh = X86_LINUX_UPDATE[0], X86_LINUX_UPDATE[1]
 		U.ServerCfgPre, U.ServerCfgSh = X86_LINUX_UPDATE[2], X86_LINUX_UPDATE[3]
 
-		U.LocalBackSh = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/bin/bakcfgsh")
-		U.LocalPreCfgSh = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/bin/prercovcfgsh")
-		U.LocalCfgSh = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/bin/rcovcfgsh")
-		U.LocalUpdHistory = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/bin/updhistory.sh")
-		U.LocalUpdCheck = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/bin/updatercheck.sh")
+		U.LocalBackSh = filepath.Join(U.CurrentWorkFolder,  "/bin/bakcfgsh")
+		U.LocalPreCfgSh = filepath.Join(U.CurrentWorkFolder, "/bin/prercovcfgsh")
+		U.LocalCfgSh = filepath.Join(U.CurrentWorkFolder,  "/bin/rcovcfgsh")
+		U.LocalUpdHistory = filepath.Join(U.CurrentWorkFolder, "/bin/updhistory.sh")
+		U.LocalUpdCheck = filepath.Join(U.CurrentWorkFolder, "/bin/updatercheck.sh")
 
 		fmt.Println("The device is a x86 platform,init x86 info.")
 	}

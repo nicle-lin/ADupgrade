@@ -131,7 +131,7 @@ func (S *Session) ReadPacket() error {
 		//return nil,fmt.Errorf("dec sec data error:\n",err)
 		return fmt.Errorf("dec sec data error %s:\n", err)
 	}
-	fmt.Println("dec sec data:",string(decSecData))
+	//fmt.Println("dec sec data:",string(decSecData))
 
 
 	secDataHeader := NewLEStream(decSecData)
@@ -175,6 +175,9 @@ func (S *Session) ReadPacket() error {
 	//fmt.Println("decSecData[secDataHeader.pos:]:",decSecData[secDataHeader.pos:])
 	S.data = secDataHeader.buff[secDataHeader.pos:]
 	//fmt.Println("#################read data seen like is ok#############")
+	fmt.Println("###################################")
+	fmt.Println(string(S.data))
+	fmt.Println("###################################\n\n")
 	return nil
 }
 

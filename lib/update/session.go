@@ -16,11 +16,17 @@ type PeerInfo struct {
 	AppVersion string
 }
 
+type SSUSlice struct {
+	SSUPacket string
+	SSUType string
+}
+
 type SSU struct {
 	Flag       bool   //Same Version SSU packet has been unpack or not
 	Version    string //AD version
 	SSUPackage string //SSU packet name
 	SSUType int    /*PACKAGE_TYPE = 1 RESTORE_TYPE = 2 EXECUTE_TYPE  = 3 AUTOBAK_NUMS  = 10 */
+	SSUInfo []SSUSlice
 }
 
 type Unpack struct {

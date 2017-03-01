@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 
 /*
@@ -12,6 +14,10 @@ packhash = {"packet" => now_package, "type" => "1"}
 type SSUType struct {
  	packet string
 	typ int
+}
+func test(str string)error{
+	fmt.Println(str)
+	return nil
 }
 func main() {
 	h := make([]SSUType,1)
@@ -27,4 +33,11 @@ func main() {
 		fmt.Println("K:",k)
 		fmt.Println("v:",v)
 	}
+	fmt.Printf("TTTT:%T\n",h)
+	fmt.Printf("#V#V:%#v\n",h)
+	fmt.Printf("+V+V:%+v\n",h)
+	var fun func(string) error
+	fun = test
+	fun("hahahahah")
 }
+

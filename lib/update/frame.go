@@ -1,5 +1,7 @@
 package update
 
+import "fmt"
+
 
 /* base frame
 * a frame begin with "0xDB0xF3".....
@@ -30,7 +32,7 @@ var CMD = [MaxCmdLen]string{
 	EXEC:    "excute",
 	GET:     "get",
 	GETOVER: "getover",
-	PUT:     "putover",
+	PUT:     "put",
 	PUTOVER: "putover",
 	VERSION: "version",
 }
@@ -85,7 +87,7 @@ func MakeCmdStr(cmdType, command string) []byte {
 func MakeCmdPacket(cmdType string, params string) ([]byte, error) {
 	cmdByte := MakeCmdStr(cmdType, params)
 	//fmt.Printf("cmdByte:%#v\n", cmdByte)
-
+	fmt.Println("cmdByte:",string(cmdByte))
 	//fmt.Println("-------------------------------------")
 	return BuildFrame(CMDFRAME, cmdByte)
 }

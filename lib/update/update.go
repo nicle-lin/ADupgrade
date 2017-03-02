@@ -18,8 +18,8 @@ func IsResultOK(S *Session) bool {
 	return !strings.Contains(string(S.data), "result:1")
 }
 
-func IsGetOver(S *Session) bool {
-	return strings.Contains(string(S.data), CMD[GETOVER])
+func IsGetOver(data []byte) bool {
+	return strings.Contains(string(data), CMD[GETOVER])
 }
 
 func QueryVersion(S *Session) bool {
@@ -34,15 +34,15 @@ func VersionResult(S *Session) {
 }
 
 //Get AD Version
-func GetAppVersion(S *Session, appVersion []byte) {
+func GetAppVersion(S *Session, appVersion string) {
 	reg := regexp.MustCompile(`[\w]+-[\w]+\.[\w]+`)
-	str := reg.FindAllString(string(appVersion), -1)[0]
+	str := reg.FindAllString(appVersion, -1)[0]
 	S.AppVersion = strings.Split(str, "-")[1]
 	fmt.Println("The first line of appversion of the current device is:", S.AppVersion)
 }
 
-func IsArmChip(appVersion []byte) bool {
-	str := strings.ToLower(string(appVersion))
+func IsArmChip(appVersion string) bool {
+	str := strings.ToLower(appVersion)
 	if strings.Contains(str, "-ac-") || strings.Contains(str, "sinfor-m") || strings.Contains(str, "-ad-") {
 		return false
 	}
@@ -60,26 +60,30 @@ func IsArmChip(appVersion []byte) bool {
 }
 
 //Get file from Server, and download,write it to the LocalFile
-func Get(S *Session, RemoteFile, LocalFile string) ([]byte, error) {
+func Get(S *Session, RemoteFile, LocalFile string) (string, error) {
 	if DoCmd(S, CMD[GET], RemoteFile) != nil {
-		return nil, fmt.Errorf("the server can't send the file:%s.check the file exists.\n", RemoteFile)
+		return "", fmt.Errorf("the server can't send the file:%s.check the file exists.\n", RemoteFile)
 	}
 	var allData []byte
+	var allDataStr string
 	S.ReadPacket()
 	allData = S.data
-	if S.typ == DATAFRAME {
+	for S.typ == DATAFRAME {
 		S.ReadPacket()
 		allData = append(allData, S.data...)
 	}
-	if !IsGetOver(S) {
-		return nil, fmt.Errorf("Not found getover flag while get the file:%s\n", RemoteFile)
+	if !IsGetOver(allData) {
+		return "", fmt.Errorf("Not found getover flag while get the file:%s\n", RemoteFile)
+	}else{
+		//have to delete "getover" string
+		allDataStr = strings.Replace(string(allData),CMD[GETOVER],"",1)
 	}
 	if LocalFile == "" {
-		return allData, nil
+		return allDataStr, nil
 	}
 
-	err := ioutil.WriteFile(LocalFile, allData, 0666)
-	return nil, err
+	err := ioutil.WriteFile(LocalFile, []byte(allDataStr), 0666)
+	return "", err
 }
 
 //return true,it mean command execute success by peer
@@ -101,7 +105,7 @@ func DoCmd(S *Session, cmdType, params string) error {
 	if IsResultOK(S) {
 		return nil
 	} else {
-		return fmt.Errorf("result is not ok")
+		return fmt.Errorf("result is not ok:%s",string(S.data))
 	}
 
 }
@@ -114,17 +118,20 @@ func Exec(S *Session, U *Update, Command string) (string, error) {
 	}
 	getResult, err1 := Get(S, U.TempRstFile, "")
 	if err1 != nil {
-		return string(getResult), err1
+		return getResult, err1
 	}
-	if strings.TrimSpace(string(getReturn)) != "0" || doRet != nil {
-		return string(getResult), fmt.Errorf("DoCmd error or return result is 0\n")
+	if strings.Fields(getReturn)[0] != "0" || doRet != nil {
+		return getResult, fmt.Errorf("Exec %s fail:%s\n",Command,doRet)
 	}
-	return string(getResult), nil
+	return getResult, nil
 }
 
 func Put(S *Session, LocalFile, RemoteFile string) error {
-	if DoCmd(S, CMD[PUT], RemoteFile) != nil {
-		return fmt.Errorf("DoCmd fail, put %s fail\n", RemoteFile)
+	if !IsPathExist(LocalFile) {
+		return fmt.Errorf("%s don't exist", LocalFile)
+	}
+	if err := DoCmd(S, CMD[PUT], RemoteFile); err != nil {
+		return fmt.Errorf("DoCmd fail, put %s fail,err msg is %s\n", RemoteFile,err)
 	}
 	file, err := os.Open(LocalFile)
 	if err != nil {
@@ -207,12 +214,12 @@ func Logout(S *Session) error {
 }
 
 func UpgradeCheck(S *Session, U *Update) error {
-	msg, err := Exec(S, U, "ls "+UPDATE_CHECK_SCRIPT)
+	msg, err := Exec(S, U, "ls " + UPDATE_CHECK_SCRIPT)
 	if err != nil {
 		fmt.Println("exec ls "+UPDATE_CHECK_SCRIPT + " fail:",err)
 		fmt.Println("exec ls "+UPDATE_CHECK_SCRIPT + " fail:",msg)
 		if err := Put(S, U.LocalUpdCheck, UPDATE_CHECK_SCRIPT);err != nil {
-			fmt.Printf("Put file %s to server %s fail,the error msg is:%s",U.LocalUpdCheck,UPDATE_CHECK_SCRIPT,err)
+			//fmt.Printf("Put file %s to server %s fail,the error msg is:%s",U.LocalUpdCheck,UPDATE_CHECK_SCRIPT,err)
 			return fmt.Errorf("Put file %s to server %s fail,the error msg is:%s",U.LocalUpdCheck,UPDATE_CHECK_SCRIPT,err)
 		}
 	}
@@ -281,7 +288,7 @@ func Upgrade(ip, port, password, ssu string) error {
 	if err != nil {
 		return err
 	}
-	var appVersion []byte
+	var appVersion string
 	appVersion, err = Get(S, APPVERSION_FILE, "")
 	if err != nil {
 		return err

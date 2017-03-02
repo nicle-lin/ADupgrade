@@ -313,7 +313,7 @@ func newUpdate()*Update{
 	return &Update{SSU:&SSU{SSUInfo:ssuInfo},Package:&Package{},Unpack:&Unpack{},Cfg:&Cfg{}}
 }
 
-func InitClient(appVersion []byte) *Update {
+func InitClient(appVersion string) *Update {
 	U := newUpdate()
 	U.FolderPrefix = GetRandomString(32)
 	U.CurrentWorkFolder = GetCurrentDirectory()

@@ -92,9 +92,9 @@ func (S *Session) ReadPacket() error {
 	//step 2:　读取frame长度大小的数据
 	n, err = S.Conn.Read(frameHeaderBuf)
 	if n != FRAME_HEADER_LEN || err != nil {
-		fmt.Println("read frame len > Max frame len")
+		fmt.Println("read frame len is FRAME_HEADER_LEN,it is ",n)
 		//return nil, fmt.Errorf("frame len is wrong:#%#v\n",n)
-		return fmt.Errorf("frame len is wrong:#%#v\n", n)
+		return fmt.Errorf("frame len is wrong:%d,err msg is:%s\n", n,err)
 	}
 	frameHeader := NewLEStream(frameHeaderBuf)
 	frameFlag, errFlag := frameHeader.ReadUint16()

@@ -61,3 +61,17 @@
 2017/02/17 22:14:30 [C] [log.go:41] critical
 2017/02/17 22:14:30 [E] [log.go:41] error
 2017/02/17 22:14:30 [M] [log.go:41] emergency
+2017/03/02 10:34:30 [D] [log.go:36] trace
+2017/03/02 10:34:30 [I] [log.go:41] info
+2017/03/02 10:34:30 [W] [log.go:41] warning
+2017/03/02 10:34:30 [D] [log.go:41] debug
+2017/03/02 10:34:30 [C] [log.go:41] critical
+2017/03/02 10:34:30 [E] [log.go:41] error
+2017/03/02 10:34:30 [M] [log.go:41] emergency
+2017/03/02 11:16:43 [D] [log.go:36] trace
+2017/03/02 11:16:43 [I] [log.go:41] info
+2017/03/02 11:16:43 [W] [log.go:41] warning
+2017/03/02 11:16:43 [D] [log.go:41] debug
+2017/03/02 11:16:43 [C] [log.go:41] critical
+2017/03/02 11:16:43 [E] [log.go:41] error
+2017/03/02 11:16:43 [M] [log.go:41] emergency

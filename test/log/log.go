@@ -40,6 +40,9 @@ func main() {
 
 	Le2()
 
+	logs.Info("--------------------------------------------")
+	logs.Critical("critical")
+	logs.Error("error")
 	/*
 	// 创建根记录器(root logger)
 	logger := log.NewLogger()

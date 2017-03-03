@@ -11,19 +11,25 @@ import (
 	"strings"
 	"github.com/go-ini/ini"
 	"path/filepath"
+	"github.com/astaxie/beego/logs"
 )
+var log logs.BeeLogger
+
+func init()  {
+	log = logs.NewLogger(10)
+}
 
 //if S.data contains string "result:1",it means command executed fail by AD
-func IsResultOK(S *Session) bool {
-	return !strings.Contains(string(S.data), "result:1")
+func IsResultOK(data string) bool {
+	return !strings.Contains(data, "result:1")
 }
 
-func IsGetOver(data []byte) bool {
-	return strings.Contains(string(data), CMD[GETOVER])
+func IsGetOver(data string) bool {
+	return strings.Contains(data, CMD[GETOVER])
 }
 
-func QueryVersion(S *Session) bool {
-	return strings.Contains(string(S.data), "result:7629414")
+func QueryVersion(data string) bool {
+	return strings.Contains(data, "result:7629414")
 }
 
 // Get the Server Version(updateme program version)
@@ -38,7 +44,7 @@ func GetAppVersion(S *Session, appVersion string) {
 	reg := regexp.MustCompile(`[\w]+-[\w]+\.[\w]+`)
 	str := reg.FindAllString(appVersion, -1)[0]
 	S.AppVersion = strings.Split(str, "-")[1]
-	fmt.Println("The first line of appversion of the current device is:", S.AppVersion)
+	log.Info("The first line of appversion of the current device is:", S.AppVersion)
 }
 
 func IsArmChip(appVersion string) bool {
@@ -72,7 +78,7 @@ func Get(S *Session, RemoteFile, LocalFile string) (string, error) {
 		S.ReadPacket()
 		allData = append(allData, S.data...)
 	}
-	if !IsGetOver(allData) {
+	if !IsGetOver(string(allData)) {
 		return "", fmt.Errorf("Not found getover flag while get the file:%s\n", RemoteFile)
 	}else{
 		//have to delete "getover" string
@@ -102,7 +108,7 @@ func DoCmd(S *Session, cmdType, params string) error {
 	if err != nil {
 		return err
 	}
-	if IsResultOK(S) {
+	if IsResultOK(string(S.data)) {
 		return nil
 	} else {
 		return fmt.Errorf("result is not ok:%s",string(S.data))
@@ -120,6 +126,7 @@ func Exec(S *Session, U *Update, Command string) (string, error) {
 	if err1 != nil {
 		return getResult, err1
 	}
+	//TODO I should write a delete  white space by myself
 	if strings.Fields(getReturn)[0] != "0" || doRet != nil {
 		return getResult, fmt.Errorf("Exec %s fail:%s\n",Command,doRet)
 	}
@@ -128,6 +135,7 @@ func Exec(S *Session, U *Update, Command string) (string, error) {
 
 func Put(S *Session, LocalFile, RemoteFile string) error {
 	if !IsPathExist(LocalFile) {
+		log.Error()
 		return fmt.Errorf("%s don't exist", LocalFile)
 	}
 	if err := DoCmd(S, CMD[PUT], RemoteFile); err != nil {
@@ -196,7 +204,7 @@ func Login(ip, port, passwd string) (*Session, error) {
 	if DoCmd(S, CMD[LOGIN], passwd) != nil {
 		return nil,fmt.Errorf("Login fail,please check the passwd\n")
 	}
-	if QueryVersion(S) {
+	if QueryVersion(string(S.data)) {
 		if DoCmd(S, CMD[VERSION], "") != nil {
 			return nil, fmt.Errorf("DoCmd %s fail\n", CMD[VERSION])
 		}

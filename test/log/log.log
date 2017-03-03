@@ -75,3 +75,10 @@
 2017/03/02 11:16:43 [C] [log.go:41] critical
 2017/03/02 11:16:43 [E] [log.go:41] error
 2017/03/02 11:16:43 [M] [log.go:41] emergency
+2017/03/03 15:36:52 [D] [log.go:36] trace
+2017/03/03 15:36:52 [I] [log.go:48] info
+2017/03/03 15:36:52 [W] [log.go:48] warning
+2017/03/03 15:36:52 [D] [log.go:48] debug
+2017/03/03 15:36:52 [C] [log.go:48] critical
+2017/03/03 15:36:52 [E] [log.go:48] error
+2017/03/03 15:36:52 [M] [log.go:48] emergency

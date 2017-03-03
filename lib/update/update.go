@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"github.com/astaxie/beego/logs"
 )
-var log logs.BeeLogger
+var log *logs.BeeLogger
 
 func init()  {
 	log = logs.NewLogger(10)

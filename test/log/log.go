@@ -35,6 +35,13 @@ func Le1(){
 func Le2() {
 	Le1()
 }
+var l *logs.BeeLogger
+func init(){
+	l = logs.NewLogger(10)
+}
+func loglog(){
+	l.Info("in the log")
+}
 
 func main() {
 
@@ -43,6 +50,8 @@ func main() {
 	logs.Info("--------------------------------------------")
 	logs.Critical("critical")
 	logs.Error("error")
+	l.Info("hahahah############")
+	loglog()
 	/*
 	// 创建根记录器(root logger)
 	logger := log.NewLogger()

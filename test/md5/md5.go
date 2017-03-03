@@ -158,7 +158,7 @@ func SinglePackageMd5(ssuPath string) error {
 	if err != nil {
 		return err
 	}
-	if string(ssuMd5) == Md5Sum(ssuMd5) {
+	if string(ssuMd5) == Md5Sum(ssuPath) {
 		return nil
 	} else {
 		return fmt.Errorf("single package md5 don't match\n")

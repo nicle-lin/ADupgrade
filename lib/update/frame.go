@@ -1,6 +1,6 @@
 package update
 
-import "fmt"
+
 
 
 /* base frame
@@ -87,7 +87,7 @@ func MakeCmdStr(cmdType, command string) []byte {
 func MakeCmdPacket(cmdType string, params string) ([]byte, error) {
 	cmdByte := MakeCmdStr(cmdType, params)
 	//fmt.Printf("cmdByte:%#v\n", cmdByte)
-	fmt.Println("cmdByte:",string(cmdByte))
+	//fmt.Println("cmdByte:",string(cmdByte))
 	//fmt.Println("-------------------------------------")
 	return BuildFrame(CMDFRAME, cmdByte)
 }

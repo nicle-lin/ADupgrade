@@ -119,7 +119,7 @@ func (S *Session) ReadPacket() error {
 	encSecData := make([]byte, secDataLen)
 	n, err = S.Conn.Read(encSecData)
 
-	fmt.Printf("read frame enc data:%#v\n", encSecData)
+	//fmt.Printf("read frame enc data:%#v\n", encSecData)
 
 	var decSecData []byte
 	//step 4: 由于暂时没法知道解密之后的数据是多大，所以直接先分配最大的
@@ -175,9 +175,9 @@ func (S *Session) ReadPacket() error {
 	//fmt.Println("decSecData[secDataHeader.pos:]:",decSecData[secDataHeader.pos:])
 	S.data = secDataHeader.buff[secDataHeader.pos:]
 	//fmt.Println("#################read data seen like is ok#############")
-	fmt.Println("###################################")
+	//fmt.Println("###################################")
 	fmt.Println(string(S.data))
-	fmt.Println("###################################\n\n")
+	//fmt.Println("###################################\n\n")
 	return nil
 }
 

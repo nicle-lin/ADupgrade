@@ -84,16 +84,16 @@ func unpack(packPath,destPath,unpackTool,logFile string) error{
 	if err := new.Start(); err != nil {return err}
 	data, err := ioutil.ReadAll(stdout)
 	if err != nil {
-		fmt.Println("unpack log has been lost")
+		log.Error("[unpack]unpack log has been lost,error msg:%s",err)
 	}
 	if err := ioutil.WriteFile(logFile,data,0664);err != nil {
-		fmt.Println("unpack log can't write it to logfile:",err)
+		log.Error("[unpack]unpack log can't write it to logfile:",err)
 	}
 	if err := new.Wait(); err == nil {
-		fmt.Println("unpack success")
+		log.Info("[unpack]Unpack %s success",packPath)
 		return nil
 	}else{
-		fmt.Println("use new password to unpack fail:",err)
+		log.Debug("[unpack]use new password to unpack fail:",err)
 	}
 
 
@@ -110,18 +110,50 @@ func unpack(packPath,destPath,unpackTool,logFile string) error{
 	if err := old.Start(); err != nil {return err}
 	data, err = ioutil.ReadAll(stdout)
 	if err != nil {
-		fmt.Println("unpack log has been lost:",err)
+		log.Error("[unpack]unpack log has been lost,error msg:%s",err)
 	}
 	if err := ioutil.WriteFile(logFile,data,0664); err != nil {
-		fmt.Println("unpack log can't write it to logfile:",err)
+		log.Error("[unpack]unpack log can't write it to logfile:",err)
 	}
 	if err := old.Wait(); err != nil {
-		return err
+		log.Info("[unpack]Unpack %s success",packPath)
+		return fmt.Errorf("[unpack]use old or new password to unpack fail,err msg:%s",err)
 	}else{
-		fmt.Println("unpack success")
+		log.Info("[unpack]Unpack %s success",packPath)
 		return nil
 	}
 
+}
+
+
+
+func unpackPackage(U *Update)error {
+	// function InitEnvironment has been init the path U.SingleUnpkg
+	log.Info("[UnpackPackage]begin to unpack the package")
+	logFile := filepath.Join(GetCurrentDirectory(),"7z.log")
+	return unpack(U.SSUPackage,U.SingleUnpkg,"7za",logFile)
+}
+
+func UnpackPackage(U *Update)error{
+	if U.SSUType == PACKAGE_TYPE || U.SSUType == RESTORE_TYPE {
+		return unpackPackage(U)
+	}
+	return fmt.Errorf("[UnpackPackage]Package type %d is not support",U.SSUType)
+}
+
+//cfg is a config file,it should be a config file absolute path
+func UnpackCfg(U *Update,cfg string) error {
+	fmt.Println("begin to unpack the config package")
+	logFile := filepath.Join(GetCurrentDirectory(),"unpakccfg.log")
+	return unpack(cfg,U.CfgPath,"7z",logFile)
+}
+
+
+//TODO pack the config file, not done yet
+func PackCfg(U *Update,cfg string)error{
+	fmt.Println("begin to unpack the config package")
+	logFile := filepath.Join(GetCurrentDirectory(),"pakccfg.log")
+	return unpack(cfg,U.CfgPathTmp,"7z",logFile)
 }
 
 
@@ -158,29 +190,6 @@ func pack(packPath,destPath,unpackTool,logFile string)error  {
 
 
 
-
-func unpackPackage(U *Update)error {
-	// function InitEnvironment has been init the path U.SingleUnpkg
-	fmt.Println("begin to unpack the package")
-	logFile := filepath.Join(GetCurrentDirectory(),"7z.log")
-	return unpack(U.SSUPackage,U.SingleUnpkg,"7za",logFile)
-}
-
-//cfg is a config file,it should be a config file absolute path
-func UnpackCfg(U *Update,cfg string) error {
-	fmt.Println("begin to unpack the config package")
-	logFile := filepath.Join(GetCurrentDirectory(),"unpakccfg.log")
-	return unpack(cfg,U.CfgPath,"7z",logFile)
-}
-
-
-//TODO pack the config file, not done yet
-func PackCfg(U *Update,cfg string)error{
-	fmt.Println("begin to unpack the config package")
-	logFile := filepath.Join(GetCurrentDirectory(),"pakccfg.log")
-	return unpack(cfg,U.CfgPathTmp,"7z",logFile)
-}
-
 func FreeUpdateDir(){
 
 }
@@ -188,13 +197,6 @@ func FreeUpdateDir(){
 
 func FreeCfgDir(){
 	
-}
-
-func UnpackPackage(U *Update)error{
-	if U.SSUType == PACKAGE_TYPE || U.SSUType == RESTORE_TYPE {
-		return unpackPackage(U)
-	}
-	return nil
 }
 
 
@@ -205,10 +207,11 @@ func GetApps(appPath string)(apps []string){
 	for _, v := range files{
 		//return nil means find the str
 		if reg.FindAllString(v.Name(),-1) != nil{
-			apps = append(apps,v.Name())
+			apps = append(apps,filepath.Join(appPath,v.Name()))
 		}
 
 	}
+	log.Debug("[GetApps]Apps is %v",apps)
 	return apps
 }
 
@@ -219,7 +222,7 @@ func GetDesApps(DesAppPath string) (desApps []string){
 	for _, v := range files{
 		//return nil means find the str
 		if reg.FindAllString(v.Name(),-1) != nil{
-			desApps = append(desApps,v.Name())
+			desApps = append(desApps,filepath.Join(DesAppPath,v.Name()))
 		}
 
 	}
@@ -233,10 +236,12 @@ func LoadAppData (AppPath string) {
 
 func PutDesApp(S *Session,LocalFile, RemoteFile string) error {
 	if !IsPathExist(LocalFile) {
+		log.Error("[PutDesApp]%s don't exist", LocalFile)
 		return fmt.Errorf("%s don't exist", LocalFile)
 	}
-	if DoCmd(S, CMD[PUT], RemoteFile) != nil {
-		return fmt.Errorf("DoCmd fail, put %s fail\n", RemoteFile)
+	if err := DoCmd(S, CMD[PUT], RemoteFile); err != nil {
+		log.Error("[PutDesApp]DoCmd fail, put %s fail,err msg:%s", RemoteFile,err)
+		return fmt.Errorf("[PutDesApp]DoCmd fail, put %s fail,err msg:%s", RemoteFile,err)
 	}
 	file, err := os.Open(LocalFile)
 	if err != nil {return err}
@@ -256,8 +261,9 @@ func PutDesApp(S *Session,LocalFile, RemoteFile string) error {
 		}
 		S.WritePacket(buf[:n])
 	}
-	if DoCmd(S, CMD[PUTOVER], "") != nil {
-		return fmt.Errorf("DoCmd fail, PUTOVER fail\n")
+	if err := DoCmd(S, CMD[PUTOVER], ""); err != nil {
+		log.Error("[PutDesApp]DoCmd fail, PUTOVER fail,err msg:%s",err)
+		return fmt.Errorf("[PutDesApp]DoCmd fail, PUTOVER fail,err msg:%s",err)
 	}
 	return nil
 }
@@ -268,19 +274,21 @@ func UpdateApps(S *Session,U *Update,desApps []string)error {
 	for _, desApp := range desApps{
 		app := strings.TrimSuffix(desApp,"_des")
 		appsh := strings.Replace(app,"app","appsh",1)
-		fmt.Println("uploading :",app)
+		log.Info("[UpdateApps]uploading %s to /stmp/app:",app)
 		if err := PutDesApp(S,app,"/stmp/app");err != nil {return err}
-		fmt.Println("put file success:",app)
+		log.Info("[UpdateApps]upload %s to /stmp/app: success",app)
+
+		log.Info("[UpdateApps]start to put %s to %s",appsh,U.ServerAppSh)
 		if err := Put(S,appsh,U.ServerAppSh);err != nil {return err}
-		fmt.Println("put file success:",appsh)
-		fmt.Println("executing ",appsh)
+		log.Info("[UpdateApps]start to put %s to %s success",appsh,U.ServerAppSh)
+
+		log.Info("[UpdateApps]start to exec %s",U.ServerAppSh)
 		msg, err := Exec(S,U,U.ServerAppSh)
 		if err != nil {
-			fmt.Println("executing fail:",appsh)
-			fmt.Println("retrun message:",msg)
-			return err
+			log.Error("[UpdateApps] exec %s fail,get msg:%s,err msg:%s",U.ServerAppSh,msg,err)
+			return fmt.Errorf("[UpdateApps] exec %s fail,get msg:%s,err msg:%s",U.ServerAppSh,msg,err)
 		}
-		fmt.Println("retrun message:",msg)
+		log.Debug("[UpdateApps]exec %s retrun message:%s",U.ServerAppSh,msg)
 	}
 	return nil
 }
@@ -444,7 +452,7 @@ func SinglePackageMd5(ssuPath string) error {
 	if err != nil {
 		return err
 	}
-	if ssuMd5 == Md5Sum(ssuMd5,33) {
+	if ssuMd5 == Md5Sum(ssuPath,33) {
 		return nil
 	} else {
 		return fmt.Errorf("single package md5 don't match\n")
@@ -453,9 +461,9 @@ func SinglePackageMd5(ssuPath string) error {
 
 
 func PrepareUpgrade(S *Session, U *Update) error {
-	fmt.Println("init to upgrade or restore  the package:", U.SSUPackage)
+	log.Info("[PrepareUpgrade]init to upgrade or restore  the package:%s", U.SSUPackage)
 	if U.UpdatingFlag && (time.Now().Sub(U.UpdateTime) < UPD_TIMEOUT * time.Second ) {
-		return fmt.Errorf("now update the package:%s,begin at %v\n ....",U.SSUPackage,U.UpdateTime)
+		return fmt.Errorf("[PrepareUpgrade]now update the package:%s,begin at %v\n ....",U.SSUPackage,U.UpdateTime)
 	}
 	if err := InitEnvironment(U); err != nil {return err}
 	if err := FtpDownloadSSUPackage(U.SSUPackage,"admin","admin"); err != nil {return err}
@@ -478,8 +486,9 @@ func PrepareUpgrade(S *Session, U *Update) error {
 		U.SSUInfo = append(U.SSUInfo,ssuInfo)
 
 		U.SSUType = PACKAGE_TYPE //TODO: it will be abandoned
+		log.Info("[PrepareUpgrade]The package %s is a valid single package",U.SSUPackage)
 	}else {
-		return fmt.Errorf("The package is not a valid package,please check first. if your use a ftp path,please download it to local and try again.")
+		return fmt.Errorf("[PrepareUpgrade]The package %s is not a valid package,please check first. if your use a ftp path,please download it to local and try again.\n",U.SSUPackage)
 	}
 
 	return nil

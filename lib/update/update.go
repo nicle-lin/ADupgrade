@@ -134,12 +134,14 @@ func Exec(S *Session, U *Update, Command string) (string, error) {
 }
 
 func Put(S *Session, LocalFile, RemoteFile string) error {
+	log.Info("[Put]put %s to %s is starting",LocalFile,RemoteFile)
 	if !IsPathExist(LocalFile) {
-		log.Error()
+		log.Error("[Put] %s don't exist", LocalFile)
 		return fmt.Errorf("%s don't exist", LocalFile)
 	}
 	if err := DoCmd(S, CMD[PUT], RemoteFile); err != nil {
-		return fmt.Errorf("DoCmd fail, put %s fail,err msg is %s\n", RemoteFile,err)
+		log.Error("[Put]put %s fail,err msg is %s", RemoteFile,err)
+		return fmt.Errorf("DoCmd fail, put %s fail,err msg is: %s\n", RemoteFile,err)
 	}
 	file, err := os.Open(LocalFile)
 	if err != nil {
@@ -163,8 +165,10 @@ func Put(S *Session, LocalFile, RemoteFile string) error {
 
 	}
 	if DoCmd(S, CMD[PUTOVER], "") != nil {
+		log.Error("[Put]DoCmd fail, PUTOVER fail\n")
 		return fmt.Errorf("DoCmd fail, PUTOVER fail\n")
 	}
+	log.Info("[Put]put %s to %s success",LocalFile,RemoteFile)
 	return nil
 }
 
@@ -224,10 +228,9 @@ func Logout(S *Session) error {
 func UpgradeCheck(S *Session, U *Update) error {
 	msg, err := Exec(S, U, "ls " + UPDATE_CHECK_SCRIPT)
 	if err != nil {
-		fmt.Println("exec ls "+UPDATE_CHECK_SCRIPT + " fail:",err)
-		fmt.Println("exec ls "+UPDATE_CHECK_SCRIPT + " fail:",msg)
+		log.Warn("[UpgradeCheck]exec ls %s fail,msg:%s\n error msg:%s",UPDATE_CHECK_SCRIPT,msg,err)
 		if err := Put(S, U.LocalUpdCheck, UPDATE_CHECK_SCRIPT);err != nil {
-			//fmt.Printf("Put file %s to server %s fail,the error msg is:%s",U.LocalUpdCheck,UPDATE_CHECK_SCRIPT,err)
+			log.Error("[UpgradeCheck]Put file %s to server %s fail,the error msg is:%s",U.LocalUpdCheck,UPDATE_CHECK_SCRIPT,err)
 			return fmt.Errorf("Put file %s to server %s fail,the error msg is:%s",U.LocalUpdCheck,UPDATE_CHECK_SCRIPT,err)
 		}
 	}
@@ -309,6 +312,7 @@ func Upgrade(ip, port, password, ssu string) error {
 
 	if err := PrepareUpgrade(S, U); err != nil {return err}
 
+	if err := UnpackPackage(U);err != nil {return err}
 	apps := GetApps(U.SingleUnpkg)
 	for _, v := range apps {
 		if err := EncFile(v, v+"_des"); err != nil {return err}

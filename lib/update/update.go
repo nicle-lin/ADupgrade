@@ -229,6 +229,7 @@ func UpgradeCheck(S *Session, U *Update) error {
 	msg, err := Exec(S, U, "ls " + UPDATE_CHECK_SCRIPT)
 	if err != nil {
 		log.Warn("[UpgradeCheck]exec ls %s fail,msg:%s\n error msg:%s",UPDATE_CHECK_SCRIPT,msg,err)
+		log.Info("[UpgradeCheck]begin to put %s to server %s",U.LocalUpdCheck,UPDATE_CHECK_SCRIPT)
 		if err := Put(S, U.LocalUpdCheck, UPDATE_CHECK_SCRIPT);err != nil {
 			log.Error("[UpgradeCheck]Put file %s to server %s fail,the error msg is:%s",U.LocalUpdCheck,UPDATE_CHECK_SCRIPT,err)
 			return fmt.Errorf("Put file %s to server %s fail,the error msg is:%s",U.LocalUpdCheck,UPDATE_CHECK_SCRIPT,err)
@@ -237,13 +238,15 @@ func UpgradeCheck(S *Session, U *Update) error {
 	//execute /usr/sbin/updatercheck.sh, check it pass or fail
 	msgVersion, resultVersion := Exec(S, U, UPDATE_CHECK_SCRIPT)
 	if resultVersion != nil {
-		return fmt.Errorf("Upgradecheck failed!!!,exec /usr/sbin/updatercheck.sh,error msg:%s", msgVersion)
+		log.Error("[Upgradecheck] exec %s fail,return msg:%s,error msg:%s",UPDATE_CHECK_SCRIPT, msgVersion,resultVersion)
+		return fmt.Errorf("[Upgradecheck] exec %s fail,return msg:%s,error msg:%s",UPDATE_CHECK_SCRIPT, msgVersion,resultVersion)
 	}
 
 	//check upgrade sn valid or invalid
 	msgSn, resultSn := Exec(S, U, CHECK_UPGRADE_SN)
 	if resultSn != nil {
-		return fmt.Errorf("Upgradecheck failed!!!,exec /app/usr/sbin/checkupdsn.sh,error msg:%s", msgSn)
+		log.Error("[Upgradecheck] exec %s fail,return msg:%s,error msg:%s",CHECK_UPGRADE_SN, msgSn,resultSn)
+		return fmt.Errorf("[Upgradecheck] exec %s fail,return msg:%s,error msg:%s",CHECK_UPGRADE_SN, msgSn,resultSn)
 	}
 	return nil
 }

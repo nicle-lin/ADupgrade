@@ -52,6 +52,8 @@ func JoinCmd(cmd string, params [][2]string) []byte {
 	var b []byte
 	b = append(b, []byte(cmd)...)
 	b = append(b, []byte("\n")...)
+
+	//TODO: if params is empty,do not next
 	for _, v := range params {
 		b = append(b, []byte(v[0])...)
 		b = append(b, []byte(":")...)
@@ -75,7 +77,7 @@ func MakeCmdStr(cmdType, command string) []byte {
 	case CMD[PUT]:
 		return JoinCmd(CMD[PUT], [][2]string{{"file", command}})
 	case CMD[PUTOVER]:
-		return JoinCmd(CMD[PUTOVER], [][2]string{{}})
+		return JoinCmd(CMD[PUTOVER], [][2]string{{"",""}})
 	case CMD[VERSION]:
 		return JoinCmd(CMD[VERSION], [][2]string{{"value", "1280"}})
 	default:

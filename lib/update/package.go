@@ -302,7 +302,7 @@ func RestoreDefaultPriv()error{
 
 func UpdateSinglePacket(S *Session,U *Update)error{
 	if err := CheckUpdateCondition(S, U); err != nil {return err}
-	fmt.Println("appre exec success")
+	log.Info("[UpdateSinglePacket]appre exec success")
 	desApps := GetDesApps(U.SingleUnpkg)
 	if err := UpdateApps(S,U,desApps); err != nil {return err}
 	return nil
@@ -310,7 +310,7 @@ func UpdateSinglePacket(S *Session,U *Update)error{
 
 
 func CheckUpdateCondition(S *Session,U *Update)error{
-	fmt.Println("check the update confition by appre.")
+	log.Info("[CheckUpdateCondition]begin to check the update confition by appre.")
 	if err := Put(S, filepath.Join(U.SingleUnpkg,"apppre"),U.ServerAppRe);err != nil{return err}
 	if _,err := Exec(S,U,U.ServerAppRe); err != nil {return err}
 	return nil
@@ -339,7 +339,7 @@ func InitClient(appVersion string) *Update {
 		U.LocalUpdHistory = filepath.Join(U.CurrentWorkFolder,  "/arm_bin/updhistory.sh")
 		U.LocalUpdCheck = filepath.Join(U.CurrentWorkFolder,  "/arm_bin/updatercheck.sh")
 
-		fmt.Println("The device is a arm platform,init arm info.")
+		log.Info("[InitClient]The device is a arm platform,init arm info.")
 	} else {
 		U.TempExecFile, U.TempRstFile = X86_LINUX_BASIC[0], X86_LINUX_BASIC[1]
 		U.CustomErrFile, U.TempRetFile = X86_LINUX_BASIC[2], X86_LINUX_BASIC[3]
@@ -354,13 +354,13 @@ func InitClient(appVersion string) *Update {
 		U.LocalUpdHistory = filepath.Join(U.CurrentWorkFolder, "/bin/updhistory.sh")
 		U.LocalUpdCheck = filepath.Join(U.CurrentWorkFolder, "/bin/updatercheck.sh")
 
-		fmt.Println("The device is a x86 platform,init x86 info.")
+		log.Info("[InitClient]The device is a x86 platform,init x86 info.")
 	}
 	return U
 }
 
 func InitEnvironment(U *Update) error {
-	fmt.Println("now init enviroment for update or restore")
+	log.Info("[InitEnvironment]now init enviroment for update or restore")
 	U.SingleUnpkg = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/unpkg/")
 	U.ComposeUnpkg = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/compose_unpkg/")
 	U.PkgTemp = filepath.Join(U.CurrentWorkFolder, U.FolderPrefix, "/pkg_tmp/")
@@ -396,33 +396,36 @@ func InitCfgEnvironment(U *Update)error{
 //read file  from start to end
 func ReadMd5FromPackage(ssuPath string, start,end int64) (string,error){
 	if start < 0 || end < 0 || start > end {
-		fmt.Println("params start or end is wrong")
-		return "",fmt.Errorf("params start or end is wrong\n")
+		log.Error("[ReadMd5FromPackage]params start or end is wrong,start:%d,end:%d",start,end)
+		return "",fmt.Errorf("[ReadMd5FromPackage]params start or end is wrong,start:%d,end:%d",start,end)
 	}
 	file, err := os.Open(ssuPath)
 	if err != nil{
-		return "",err
+		return "",fmt.Errorf("[ReadMd5FromPackage]%s",err)
 	}
 	length := end-start
 	buf := make([]byte,length)
 	_,err = file.Seek(start,1)
 	n, err := io.ReadFull(file,buf)
 	if err != nil && int64(n) != length{
-		return "",err
+		return "",fmt.Errorf("[ReadMd5FromPackage]%s",err)
 	}
 	return string(buf),nil
 }
 
 //用于检查升级包是否为组合升级包，目前AD不是组合的
+//TODO:when encounter error,I think it should print error md5 and correct md5
 func ComposePackageMd5(ssuPath string)error{
 	ssuMd5, err := ReadMd5FromPackage(ssuPath,8,40)
 	if err != nil {
 		return err
 	}
-	if ssuMd5 == Md5Sum(ssuMd5,48) {
+	correctMd5 :=  Md5Sum(ssuPath,48)
+	if ssuMd5 == correctMd5{
 		return nil
 	} else {
-		return fmt.Errorf("compose package md5 don't match\n")
+		log.Error("[ComposePackageMd5]compose package md5 don't match\ncorrectMd5:%s\nerrorMd5:%s",correctMd5,ssuMd5)
+		return fmt.Errorf("[ComposePackageMd5]compose package md5 don't match\ncorrectMd5:%s\nerrorMd5:%s",correctMd5,ssuMd5)
 	}
 }
 
@@ -433,7 +436,7 @@ func ComposePackage(ssuPath string) bool{
 		if filepath.Ext(ssuPath) == ".cssu" {
 			return true
 		}else {
-			fmt.Println("The package is a cssu file,but not have a .cssu extname.")
+			log.Error("[ComposePackage]The package %s is a cssu file,but not have a .cssu extname.",ssuPath)
 			return false
 		}
 	}else {
@@ -452,10 +455,12 @@ func SinglePackageMd5(ssuPath string) error {
 	if err != nil {
 		return err
 	}
-	if ssuMd5 == Md5Sum(ssuPath,33) {
+	correctMd5 := Md5Sum(ssuPath,33)
+	if ssuMd5 == correctMd5 {
 		return nil
 	} else {
-		return fmt.Errorf("single package md5 don't match\n")
+		log.Error("[SinglePackageMd5]single package md5 don't match\ncorrectMd5:%s\nerrorMd5:%s",correctMd5,ssuMd5)
+		return fmt.Errorf("[SinglePackageMd5]single package md5 don't match\ncorrectMd5:%s\nerrorMd5:%s",correctMd5,ssuMd5)
 	}
 }
 
@@ -474,12 +479,6 @@ func PrepareUpgrade(S *Session, U *Update) error {
 	if ComposePackage(U.SSUPackage){
 		InitComposePackageArr(U.SSUPackage) //TODO: not done yet
 	}else if SinglePackageMd5(U.SSUPackage) == nil{
-		//TODO:
-		/*
-		@package_arr = Array.new
-		packhash = {"packet" => now_package, "type" => "1"}
-		@package_arr<<packhash
-		*/
 		var ssuInfo SSUSlice
 		ssuInfo.SSUPacket = U.SSUPackage
 		ssuInfo.SSUType = PACKAGE_TYPE

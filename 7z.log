@@ -1,0 +1,26 @@
+
+7-Zip (A) [64] 9.20  Copyright (c) 1999-2010 Igor Pavlov  2010-11-18
+p7zip Version 9.20 (locale=en_US.UTF-8,Utf16=on,HugeFiles=on,4 CPUs)
+
+Processing archive: ../AD6.5.ssu
+
+Extracting  app1
+Extracting  app2
+Extracting  apppre
+Extracting  appsh1
+Extracting  appsh2
+Extracting  appversion
+Extracting  cfg
+Extracting  cfgpre
+Extracting  cfgsh
+Extracting  cfgversion
+Extracting  package.conf
+Extracting  readme.txt
+Extracting  rollbackpre
+Extracting  rollbacksh
+
+Everything is Ok
+
+Files: 14
+Size:       480061070
+Compressed: 474293608

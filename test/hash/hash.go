@@ -33,6 +33,14 @@ func main() {
 		fmt.Println("K:",k)
 		fmt.Println("v:",v)
 	}
+
+	var hh []SSUType
+	for kk,value := range hh{
+		fmt.Println("kkkk:",kk)
+		fmt.Println("vvvv:",value)
+	}
+
+
 	fmt.Printf("TTTT:%T\n",h)
 	fmt.Printf("#V#V:%#v\n",h)
 	fmt.Printf("+V+V:%+v\n",h)

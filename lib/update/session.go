@@ -91,35 +91,47 @@ func (S *Session) ReadPacket() error {
 	var err error
 	//step 2:　读取frame长度大小的数据
 	n, err = S.Conn.Read(frameHeaderBuf)
-	if n != FRAME_HEADER_LEN || err != nil {
-		fmt.Println("read frame len is FRAME_HEADER_LEN,it is ",n)
-		//return nil, fmt.Errorf("frame len is wrong:#%#v\n",n)
-		return fmt.Errorf("frame len is wrong:%d,err msg is:%s\n", n,err)
+	if err != nil {
+		log.Error("[ReadPacket]Read Frame error:%s",err)
+		return fmt.Errorf("[ReadPacket]Read Frame error:%s",err)
+	}
+	if n != FRAME_HEADER_LEN {
+		log.Error("[ReadPacket]frame len is wrong:%d", n)
+		return fmt.Errorf("[ReadPacket]frame len is wrong:%d", n)
 	}
 	frameHeader := NewLEStream(frameHeaderBuf)
 	frameFlag, errFlag := frameHeader.ReadUint16()
 	if errFlag != nil {
-		return errFlag
+
+		log.Error("[ReadPacket]read frame flag fail:%s",errFlag)
+		return fmt.Errorf("[ReadPacket]frame flag is wrong:0x%x",frameFlag)
 	}
 	secDataLen, errDataLen := frameHeader.ReadUint16()
 	if errDataLen != nil {
+		log.Error("[ReadPacket]read frame secDataLen fail:%s",errDataLen)
 		return errDataLen
 	}
 	if frameFlag != FRAMEFLAG {
-		fmt.Printf("frameflage is wrong:0x%x", frameFlag)
-		//return nil, fmt.Errorf("frameflage is wrong:#%#v\n",frameFlag)
-		return fmt.Errorf("frameflage is wrong:#%#v\n", frameFlag)
+		log.Error("[ReadPacket]frame flag is wrong:0x%x",frameFlag)
+		return fmt.Errorf("[ReadPacket]frame flag is wrong:0x%x",frameFlag)
 	}
 
 	if secDataLen > MAX_DATA_LEN {
-		//return nil, fmt.Errorf("sec data len is wrong:#%#v\n",secDataLen)
-		return fmt.Errorf("sec data len is wrong:#%#v\n", secDataLen)
+		log.Error("[ReadPacket]SecDataLen wrong:0x%x",secDataLen)
+		return fmt.Errorf("[ReadPacket]SecDataLen wrong:0x%x",secDataLen)
 	}
 	//step 3: 分配加了密的sec Data的长度的空间
 	encSecData := make([]byte, secDataLen)
 	n, err = S.Conn.Read(encSecData)
+	if err != nil {
+		log.Error("[ReadPacket]Read Sec Data Frame error:%s",err)
+		return fmt.Errorf("[ReadPacket]Read Sec Data Frame error:%s",err)
+	}
+	if n != int(secDataLen) {
+		log.Error("[ReadPacket]Read Sec Data Frame len %d is not equal need Read Sec Data Frame len %d",n,int(secDataLen))
+		return fmt.Errorf("[ReadPacket]Read Sec Data Frame len %d is not equal need Read Sec Data Frame len %d",n,int(secDataLen))
+	}
 
-	//fmt.Printf("read frame enc data:%#v\n", encSecData)
 
 	var decSecData []byte
 	//step 4: 由于暂时没法知道解密之后的数据是多大，所以直接先分配最大的
@@ -127,57 +139,48 @@ func (S *Session) ReadPacket() error {
 	outSecData := make([]byte, MAX_DATA_LEN)
 	decSecData, err = Decrypt(encSecData, outSecData)
 	if err != nil {
-		fmt.Println("dec sec data error:", err)
-		//return nil,fmt.Errorf("dec sec data error:\n",err)
-		return fmt.Errorf("dec sec data error %s:\n", err)
+		log.Error("[ReadPacket]dec sec data error:%s",err)
+		return fmt.Errorf("[ReadPacket]dec sec data error:%s",err)
 	}
-	//fmt.Println("dec sec data:",string(decSecData))
 
 
 	secDataHeader := NewLEStream(decSecData)
 	secDataFlag, errSecDataFlag := secDataHeader.ReadUint16()
 	if errSecDataFlag != nil {
-		return errSecDataFlag
+		log.Error("[ReadPacket]Read Sec Data Flag error:%s",errSecDataFlag)
+		return fmt.Errorf("[ReadPacket]Read Sec Data Flag error:%s",errSecDataFlag)
 	}
 	if secDataFlag != FRAMEFLAG {
-		fmt.Printf("sec Data flag is wrong:0x%x\n", secDataFlag)
-		//return nil,fmt.Errorf("sec Data flag is wrong:0x%x\n",secDataFlag)
-		return fmt.Errorf("sec Data flag is wrong:0x%x\n", secDataFlag)
+		log.Error("[ReadPacket]Sec Data Flag wrong:0x%x",secDataFlag)
+		return fmt.Errorf("[ReadPacket]Sec Data Flag wrong:0x%x",secDataFlag)
 	}
 	dataLen, errSecDataLen := secDataHeader.ReadUint16()
 	if errSecDataLen != nil {
-		return errSecDataLen
+		log.Error("[ReadPacket]Read Sec Data Len error:%s",errSecDataLen)
+		return fmt.Errorf("[ReadPacket]Read Sec Data Len error:%s",errSecDataLen)
 	}
 	secDataType, errSecDataType := secDataHeader.ReadByte()
 	if errSecDataType != nil {
-		return errSecDataType
+		log.Error("[ReadPacket]Read Sec Data Type error:%s",errSecDataType)
+		return fmt.Errorf("[ReadPacket]Read Sec Data Type error:%s",errSecDataType)
 	}
-	realDataLen := uint16(len(decSecData[secDataHeader.pos:]))
-	//fmt.Println("##############################################")
 
-	if dataLen != realDataLen {
-		//fmt.Printf("sec Data len is wrong:0x%x\n", dataLen, "receive data len:ox%x\n", realDataLen)
-		//return nil, fmt.Errorf("sec Data len is wrong:0x%x\n",dataLen,"receive data len:ox%x\n",realDataLen)
-		return fmt.Errorf("sec Data len is wrong:0x%x\n,receive data len:ox%x\n", dataLen, realDataLen)
-	}
-	//fmt.Println("----------------befor pos------------------------")
 	if secDataType != CMDFRAME && secDataType != DATAFRAME {
-		fmt.Printf("sec data type is wrong:0x%x\n", secDataType)
-		//return nil, fmt.Errorf("sec data type is wrong:0x%x\n",secDataType)
-		return fmt.Errorf("sec data type is wrong:0x%x\n", secDataType)
+		log.Error("[ReadPacket]Sec Data Type wrong:%d",secDataType)
+		return fmt.Errorf("[ReadPacket]Sec Data Type wrong:%d",secDataType)
 	}
-	//fmt.Println("################almost to pos ################################")
-	//fmt.Printf("##############################secDataType:0x%x\n",secDataType)
+
+	realDataLen := uint16(len(decSecData[secDataHeader.pos:]))
+	if dataLen != realDataLen {
+		log.Error("[ReadPacket]Read Sec Data len %d is not equal need Read Sec Data len %d",realDataLen,dataLen)
+		return fmt.Errorf("[ReadPacket]Read Sec Data len %d is not equal need Read Sec Data len %d",realDataLen,dataLen)
+	}
+
+
 	S.typ = secDataType
 	S.length = secDataLen
-
-	//fmt.Println("###############pos#######################")
-	//fmt.Println("decSecData[secDataHeader.pos:]:",decSecData[secDataHeader.pos:])
 	S.data = secDataHeader.buff[secDataHeader.pos:]
-	//fmt.Println("#################read data seen like is ok#############")
-	//fmt.Println("###################################")
-	fmt.Println(string(S.data))
-	//fmt.Println("###################################\n\n")
+	log.Debug("[ReadPacket]read data is:\n%s",string(S.data))
 	return nil
 }
 

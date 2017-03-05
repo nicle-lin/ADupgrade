@@ -1007,12 +1007,43 @@ func EncFile(srcFile, dstFile string)error  {
 	return nil
 }
 
+func PutDesApp(LocalFile string) error {
+	file, err := os.Open(LocalFile)
+	if err != nil {return err}
+
+	defer file.Close()
+
+	buf := make([]byte, 1038)
+	bufRead := bufio.NewReader(file)
+
+	for {
+		n, err1 := bufRead.Read(buf)
+		if err1 != nil && err1 != io.EOF {
+			return err1
+		}
+		if 0 == n {
+			break
+		}
+		fmt.Printf("%#v",buf[:n])
+		fmt.Println("-------------------------")
+	}
+
+	return nil
+}
+
+
+
 func main() {
+	/*
 	fmt.Println(os.Args[1])
 	fmt.Println(os.Args[2])
 	if err := EncFile(os.Args[1],os.Args[2]); err != nil {
 		fmt.Println(err)
 	}else {
 		fmt.Println("success")
+	}
+	*/
+	if err := PutDesApp(os.Args[1]);err != nil {
+		fmt.Println(err)
 	}
 }

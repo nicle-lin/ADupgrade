@@ -596,10 +596,13 @@ func EncFile(srcFile, dstFile string)error  {
 		n, errRead := srcfileRead.Read(srcBuf)
 		if errRead != nil && errRead != io.EOF {return errRead}
 		if 0 == n {break}
+
 		data, errMake := MakeDataPacket(srcBuf[:n])
 		if errMake != nil {return errMake}
+
 		wn,errWrite := dstfileWrite.Write(data)
 		if errWrite != nil {return errWrite}
+
 		if wn != len(data) {return fmt.Errorf("write data len is wrong %v",wn)}
 		if err := dstfileWrite.Flush(); err != nil {return err}
 	}

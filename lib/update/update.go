@@ -17,6 +17,8 @@ var log *logs.BeeLogger
 
 func init()  {
 	log = logs.NewLogger(10)
+	log.EnableFuncCallDepth(true)
+	log.SetLogFuncCallDepth(5)
 }
 
 //if S.data contains string "result:1",it means command executed fail by AD
@@ -25,6 +27,8 @@ func IsResultOK(data string) bool {
 }
 
 func IsGetOver(data string) bool {
+	log.Debug("[IsGetOver]CMD[GETOVER]is %s",CMD[GETOVER])
+	log.Debug("[IsGetOver],data:\n%s",data)
 	return strings.Contains(data, CMD[GETOVER])
 }
 
@@ -41,10 +45,11 @@ func VersionResult(S *Session) {
 
 //Get AD Version
 func GetAppVersion(S *Session, appVersion string) {
+	log.Debug("[GetAppVersion]appversion:\n%s",appVersion)
 	reg := regexp.MustCompile(`[\w]+-[\w]+\.[\w]+`)
 	str := reg.FindAllString(appVersion, -1)[0]
 	S.AppVersion = strings.Split(str, "-")[1]
-	log.Info("The first line of appversion of the current device is:", S.AppVersion)
+	log.Info("[GetAppVersion]The first line of appversion of the current device is:", S.AppVersion)
 }
 
 func IsArmChip(appVersion string) bool {
@@ -67,28 +72,33 @@ func IsArmChip(appVersion string) bool {
 
 //Get file from Server, and download,write it to the LocalFile
 func Get(S *Session, RemoteFile, LocalFile string) (string, error) {
-	if DoCmd(S, CMD[GET], RemoteFile) != nil {
-		return "", fmt.Errorf("the server can't send the file:%s.check the file exists.\n", RemoteFile)
+	if err := DoCmd(S, CMD[GET], RemoteFile);err != nil {
+		return "", fmt.Errorf("the server can't send the file:%s.check the file exists,err msg:%s", RemoteFile,err)
 	}
 	var allData []byte
-	var allDataStr string
-	S.ReadPacket()
-	allData = S.data
-	for S.typ == DATAFRAME {
-		S.ReadPacket()
-		allData = append(allData, S.data...)
+	if err := S.ReadPacket();err != nil {
+		log.Error("[Get]Get data error:%s",err)
+		log.Error("[Get]Get data is :%s",string(S.data))
+		return "",fmt.Errorf("[Get]Get data error:%s",err)
 	}
-	if !IsGetOver(string(allData)) {
-		return "", fmt.Errorf("Not found getover flag while get the file:%s\n", RemoteFile)
-	}else{
-		//have to delete "getover" string
-		allDataStr = strings.Replace(string(allData),CMD[GETOVER],"",1)
+	for S.typ == DATAFRAME {
+		allData = append(allData, S.data...)
+		if err := S.ReadPacket(); err != nil {
+			log.Error("[Get]ReadPacket error:%s",err)
+			return "",fmt.Errorf("[Get]ReadPacket error:%s",err)
+		}
+	}
+	//when readpacket type is not DATAFRAME,it must be CMDFRAME
+	//So,just it IsGetOver use S.data
+	if !IsGetOver(string(S.data)) {
+		log.Debug("[Get]Get all data:\n%s",string(S.data))
+		return "", fmt.Errorf("[Get]Not found getover flag while get the file:%s\n", RemoteFile)
 	}
 	if LocalFile == "" {
-		return allDataStr, nil
+		return string(allData), nil
 	}
 
-	err := ioutil.WriteFile(LocalFile, []byte(allDataStr), 0666)
+	err := ioutil.WriteFile(LocalFile, allData, 0666)
 	return "", err
 }
 
@@ -102,16 +112,20 @@ func DoCmd(S *Session, cmdType, params string) error {
 	}
 	err = S.WritePacket(cmdStr)
 	if err != nil {
-		return err
+		log.Error("[DoCmd]WritePacket error:%s",err)
+		return fmt.Errorf("[DoCmd]WritePacket error:%s",err)
 	}
 	err = S.ReadPacket()
 	if err != nil {
-		return err
+		log.Error("[DoCmd]ReadPacket error:%s",err)
+		return fmt.Errorf("[DoCmd]ReadPacket error:%s",err)
 	}
 	if IsResultOK(string(S.data)) {
+		log.Info("[DoCmd]Do Command %s return Result Ok",cmdType)
 		return nil
 	} else {
-		return fmt.Errorf("result is not ok:%s",string(S.data))
+		log.Error("[Docmd]Do command %s result is not ok:%s",cmdType,string(S.data))
+		return fmt.Errorf("[Docmd]Do command %s result is not ok:%s",cmdType,string(S.data))
 	}
 
 }
@@ -120,15 +134,19 @@ func Exec(S *Session, U *Update, Command string) (string, error) {
 	doRet := DoCmd(S, CMD[EXEC], Command)
 	getReturn, err := Get(S, U.TempRetFile, "")
 	if err != nil {
-		return "", err
+		log.Error("[Exec]Get %s fail:%s",U.TempRetFile,err)
+		return "", fmt.Errorf("[Exec]Get %s fail:%s",U.TempRetFile,err)
 	}
 	getResult, err1 := Get(S, U.TempRstFile, "")
 	if err1 != nil {
-		return getResult, err1
+		log.Error("[Exec]Get %s fail:%s",U.TempRstFile,err1)
+		return getResult, fmt.Errorf("[Exec]Get %s fail:%s",U.TempRstFile,err1)
 	}
 	//TODO I should write a delete  white space by myself
 	if strings.Fields(getReturn)[0] != "0" || doRet != nil {
-		return getResult, fmt.Errorf("Exec %s fail:%s\n",Command,doRet)
+		log.Error("[Exec]Exec %s fail:%s",Command,doRet)
+		log.Debug("[Exec]return msg:%s",getReturn)
+		return getResult, fmt.Errorf("[Exec]Exec %s fail:%s",Command,doRet)
 	}
 	return getResult, nil
 }
@@ -155,13 +173,21 @@ func Put(S *Session, LocalFile, RemoteFile string) error {
 	for {
 		n, err1 := bufRead.Read(buf)
 		if err1 != nil && err1 != io.EOF {
-			return err1
+			log.Error("[Put]read file %s error:%s",LocalFile,err1)
+			return fmt.Errorf("[Put]read file %s error:%s",LocalFile,err1)
 		}
 		if 0 == n {
 			break
 		}
-		data, _ := MakeDataPacket(buf[:n])
-		S.WritePacket(data)
+		data, errData := MakeDataPacket(buf[:n])
+		if errData != nil {
+			log.Error("[Put]MakeDataPacket error:%s",errData)
+			return fmt.Errorf("[Put]MakeDataPacket error:%s",errData)
+		}
+		if err := S.WritePacket(data); err != nil {
+			log.Error("[Put]WritePacket error:%s",err)
+			return fmt.Errorf("[Put]WritePacket error:%s",err)
+		}
 
 	}
 	if DoCmd(S, CMD[PUTOVER], "") != nil {
@@ -270,13 +296,19 @@ func ThreadUpdateAllPackages(S *Session,U *Update)error  {
 }
 
 func UpdateUpgradeHistory(S *Session,U *Update)error  {
-	_, err := Exec(S,U,"ls "+UPDHISTORY_SCRIPT)
+	msg, err := Exec(S,U,"ls "+UPDHISTORY_SCRIPT)
 	if err != nil {
+		log.Debug("[UpdateUpgradeHistory] exec ls %s fail,msg:%s,err:%s",UPDHISTORY_SCRIPT,msg,err)
+		log.Debug("[UpdateUpgradeHistory] begin to put  %s to server",UPDHISTORY_SCRIPT)
 		if err := Put(S,U.LocalUpdHistory,UPDHISTORY_SCRIPT);err != nil {return err}
-		Exec(S,U,"sync") //TODO: not done yet
+		if msg,err := Exec(S,U,"sync");err != nil {
+			log.Error("[UpdateUpgradeHistroy]exec sync error:%s,msg:%s",err,msg)
+			return fmt.Errorf("[UpdateUpgradeHistroy]exec sync error:%s,msg:%s",err,msg)
+		}
 	}
-	if _, err := Exec(S,U,UPDHISTORY_SCRIPT + " " + U.SSUPackage);err != nil{
-		return err
+	if msg, err := Exec(S,U,UPDHISTORY_SCRIPT + " " + U.SSUPackage);err != nil{
+		log.Error("[UpdateUpgradeHistroy]exec %s error:%s,msg:%s",UPDHISTORY_SCRIPT,err,msg)
+		return fmt.Errorf("[UpdateUpgradeHistroy]exec %s error:%s,msg:%s",UPDHISTORY_SCRIPT,err,msg)
 	}
 	return nil
 }
@@ -286,12 +318,17 @@ func UpdateUpgradeHistory(S *Session,U *Update)error  {
 func ConfirmRebootDevice(S *Session,U *Update)error{
 	cfg, err := ini.Load(filepath.Join(U.SingleUnpkg,"package.conf"))
 	if err != nil {
-		return err
+		return fmt.Errorf("[ConfirmRebootDevice]Load package.conf fail:%s",err)
 	}
 	value := cfg.Section("restart").Key("needrestart").String()
 
 	if strings.ToLower(value) == "yes" {
-		if _,err := Exec(S,U,"reboot"); err !=nil {return err}
+		if msg,err := Exec(S,U,"reboot"); err !=nil {
+			log.Error("[ConfirmRebootDevice]exec reboot error:%s,msg:%s",err,msg)
+			return fmt.Errorf("[ConfirmRebootDevice]exec reboot error:%s,msg:%s",err,msg)
+		}
+	}else{
+		log.Debug("[ConfirmRebootDevice]don't need to  reboot")
 	}
 	return nil
 }
@@ -316,10 +353,19 @@ func Upgrade(ip, port, password, ssu string) error {
 	if err := PrepareUpgrade(S, U); err != nil {return err}
 
 	if err := UnpackPackage(U);err != nil {return err}
-	apps := GetApps(U.SingleUnpkg)
+	//apps := GetApps(U.SingleUnpkg)
+	/*
 	for _, v := range apps {
 		if err := EncFile(v, v+"_des"); err != nil {return err}
 	}
+	*/
+	/*
+	for _,v := range apps{
+		if err := EncFileByEnc(v, v+"_des");err != nil{
+			return err
+		}
+	}
+	*/
 	
 	if err := ThreadUpdateAllPackages(S,U); err != nil {return err}
 	if err := UpdateUpgradeHistory(S,U);err != nil {return err}

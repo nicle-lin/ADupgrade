@@ -47,39 +47,50 @@ type SecData struct {
 func (Sec *SecData) DataFrame() bool { return Sec.typ == DATAFRAME }
 func (Sec *SecData) CmdFrame() bool  { return Sec.typ == CMDFRAME }
 
+type params struct {
+	param1 string
+	param2 string
+}
+
+
 //命令格式组合
-func JoinCmd(cmd string, params [][2]string) []byte {
+func JoinCmd(cmd string, params []params) []byte {
 	var b []byte
 	b = append(b, []byte(cmd)...)
 	b = append(b, []byte("\n")...)
 
 	//TODO: if params is empty,do not next
+
 	for _, v := range params {
-		b = append(b, []byte(v[0])...)
+		b = append(b, []byte(v.param1)...)
 		b = append(b, []byte(":")...)
-		b = append(b, []byte(v[1])...)
+		b = append(b, []byte(v.param2)...)
 		b = append(b, []byte("\n")...)
 	}
+
+
 	//in go lang,it must octal express Null character
 	//b = append(b, []byte("\000")...)
 	length := len(b)
+	//log.Info("params len:%d",len(params))
+	//log.Info("params msg:%s",string(b[:length]))
 	return b[:length]
 }
 
 func MakeCmdStr(cmdType, command string) []byte {
 	switch cmdType {
 	case CMD[LOGIN]:
-		return JoinCmd(CMD[LOGIN], [][2]string{{"passwd", command}, {"flage", "HandleVersion"}})
+		return JoinCmd(CMD[LOGIN], []params{{"passwd", command}, {"flage", "HandleVersion"}})
 	case CMD[EXEC]:
-		return JoinCmd(CMD[EXEC], [][2]string{{"cmd", command}})
+		return JoinCmd(CMD[EXEC], []params{{"cmd", command}})
 	case CMD[GET]:
-		return JoinCmd(CMD[GET], [][2]string{{"file", command}})
+		return JoinCmd(CMD[GET], []params{{"file", command}})
 	case CMD[PUT]:
-		return JoinCmd(CMD[PUT], [][2]string{{"file", command}})
+		return JoinCmd(CMD[PUT], []params{{"file", command}})
 	case CMD[PUTOVER]:
-		return JoinCmd(CMD[PUTOVER], [][2]string{{"",""}})
+		return JoinCmd(CMD[PUTOVER], []params{})
 	case CMD[VERSION]:
-		return JoinCmd(CMD[VERSION], [][2]string{{"value", "1280"}})
+		return JoinCmd(CMD[VERSION], []params{{"value", "1280"}})
 	default:
 		return nil
 	}

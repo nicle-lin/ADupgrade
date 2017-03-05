@@ -259,7 +259,10 @@ func PutDesApp(S *Session,LocalFile, RemoteFile string) error {
 		if 0 == n {
 			break
 		}
-		S.WritePacket(buf[:n])
+		if err := S.WritePacket(buf[:n]);err != nil {
+			log.Error("[PutDesApp]WritePacket error:%s",err)
+			return fmt.Errorf("[PutDesApp]WritePacket error:%s",err)
+		}
 	}
 	if err := DoCmd(S, CMD[PUTOVER], ""); err != nil {
 		log.Error("[PutDesApp]DoCmd fail, PUTOVER fail,err msg:%s",err)
@@ -274,8 +277,9 @@ func UpdateApps(S *Session,U *Update,desApps []string)error {
 	for _, desApp := range desApps{
 		app := strings.TrimSuffix(desApp,"_des")
 		appsh := strings.Replace(app,"app","appsh",1)
-		log.Info("[UpdateApps]uploading %s to /stmp/app:",app)
-		if err := PutDesApp(S,app,"/stmp/app");err != nil {return err}
+		log.Info("[UpdateApps]uploading %s to /stmp/app",app)
+		if err := Put(S,app,"/stmp/app");err != nil {return err}
+		//if err := PutDesApp(S,app,"/stmp/app");err != nil {return err}
 		log.Info("[UpdateApps]upload %s to /stmp/app: success",app)
 
 		log.Info("[UpdateApps]start to put %s to %s",appsh,U.ServerAppSh)
@@ -303,7 +307,8 @@ func RestoreDefaultPriv()error{
 func UpdateSinglePacket(S *Session,U *Update)error{
 	if err := CheckUpdateCondition(S, U); err != nil {return err}
 	log.Info("[UpdateSinglePacket]appre exec success")
-	desApps := GetDesApps(U.SingleUnpkg)
+	//desApps := GetDesApps(U.SingleUnpkg)
+	desApps := GetApps(U.SingleUnpkg)
 	if err := UpdateApps(S,U,desApps); err != nil {return err}
 	return nil
 }
@@ -380,7 +385,7 @@ func InitEnvironment(U *Update) error {
 
 func InitCfgEnvironment(U *Update)error{
 	if U.RestoringFlag {
-		return fmt.Errorf("it is restoring,now can't restore\n")
+		return fmt.Errorf("it is restoring,now can't restore")
 	}
 	U.UpdatePath = filepath.Join(U.CurrentWorkFolder,U.FolderPrefix,"updater")
 	U.CfgPath = filepath.Join(U.UpdatePath,"cfg")
@@ -424,7 +429,7 @@ func ComposePackageMd5(ssuPath string)error{
 	if ssuMd5 == correctMd5{
 		return nil
 	} else {
-		log.Error("[ComposePackageMd5]compose package md5 don't match\ncorrectMd5:%s\nerrorMd5:%s",correctMd5,ssuMd5)
+		log.Debug("[ComposePackageMd5]compose package md5 don't match\ncorrectMd5:%s\nerrorMd5:%s",correctMd5,ssuMd5)
 		return fmt.Errorf("[ComposePackageMd5]compose package md5 don't match\ncorrectMd5:%s\nerrorMd5:%s",correctMd5,ssuMd5)
 	}
 }
@@ -459,7 +464,7 @@ func SinglePackageMd5(ssuPath string) error {
 	if ssuMd5 == correctMd5 {
 		return nil
 	} else {
-		log.Error("[SinglePackageMd5]single package md5 don't match\ncorrectMd5:%s\nerrorMd5:%s",correctMd5,ssuMd5)
+		log.Debug("[SinglePackageMd5]single package md5 don't match\ncorrectMd5:%s\nerrorMd5:%s",correctMd5,ssuMd5)
 		return fmt.Errorf("[SinglePackageMd5]single package md5 don't match\ncorrectMd5:%s\nerrorMd5:%s",correctMd5,ssuMd5)
 	}
 }

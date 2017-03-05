@@ -13,6 +13,7 @@ import (
 	"io"
 	"github.com/dutchcoders/goftp"
 	"strings"
+	"os/exec"
 )
 
 /*
@@ -238,4 +239,17 @@ func Md5Sum(arg interface{},offset ...int64) string {
 	default:
 		return fmt.Sprintf("parameter: %x is wrong type",arg)
 	}
+}
+
+
+func EncFileByEnc(app,dst string) error{
+	Args := []string{
+		0:app,
+		1:dst,
+	}
+	c := exec.Command("enc",Args...)
+	if err := c.Run();err != nil{
+		return err
+	}
+	return nil
 }

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"os"
 	"os/exec"
+	"io/ioutil"
 )
 
 func PKCS5Padding(ciphertext []byte, blockSize int) []byte {
@@ -53,7 +54,7 @@ func DesDecrypt(crypted, key []byte) ([]byte, error) {
 /*
 func testDes() {
 	key := []byte{0xad,0xcd,0x11,0xef,0x12,0x23,0x33,0xdd}
-	result, err := DesEncrypt([]byte("sangforadqianmingminma"), key)
+	result, err := DesEncrypt([]byte("sangforadqianmingmima"), key)
 	if err != nil {
 		panic(err)
 	}
@@ -71,15 +72,16 @@ func main() {
 		fmt.Println("usage: sign <ssu>")
 		return
 	}
-	encPassword := []byte{247,143, 188, 65, 177, 38 ,
-				152,16, 201, 20, 169, 220,
-				90, 163, 153, 135, 108, 127,
-				138, 34, 233, 154, 79, 255}
+	encPassword := []byte{247, 143, 188, 65, 177, 38,
+		              152, 16, 201, 20, 169, 220,
+		               90, 163, 153, 135, 60, 13,
+		               48, 80, 46, 82, 86, 85}
 	key := []byte{0xad,0xcd,0x11,0xef,0x12,0x23,0x33,0xdd}
 	password, err := DesDecrypt(encPassword, key)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("passwd:",string(password))
 	privateKey,err := exec.LookPath("private.key")
 	if err != nil {
 		fmt.Println("找不到private.key")
@@ -97,7 +99,22 @@ func main() {
 	}
 
 	cmd := exec.Command("ssusign.sh",Args...)
-	if err := cmd.Run(); err != nil {
-		fmt.Println("包签名失败")
+
+	stdout, _ := cmd.StdoutPipe()
+	if err := cmd.Start(); err != nil {
+		fmt.Println("包签名失败:",err)
+		return
+	}
+	data, err := ioutil.ReadAll(stdout)
+	if err != nil {
+		fmt.Println("签名日志信息丢失，无关紧要:",err)
+	}
+	fmt.Println("签名过程日志:\n",string(data))
+	if err := cmd.Wait(); err == nil {
+		fmt.Println("签名成功")
+		return
+	}else{
+		fmt.Println("签名失败:",err)
+		return
 	}
 }

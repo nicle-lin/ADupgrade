@@ -116,7 +116,7 @@ func (S *Session) ReadPacket() error {
 		return fmt.Errorf("[ReadPacket]frame flag is wrong:0x%x",frameFlag)
 	}
 
-	if secDataLen > MAX_DATA_LEN {
+	if secDataLen > MAX_FRAME_LEN {
 		log.Error("[ReadPacket]SecDataLen wrong:0x%x",secDataLen)
 		return fmt.Errorf("[ReadPacket]SecDataLen wrong:0x%x",secDataLen)
 	}

@@ -1034,7 +1034,7 @@ func PutDesApp(LocalFile string) error {
 
 
 func main() {
-	/*
+
 	fmt.Println(os.Args[1])
 	fmt.Println(os.Args[2])
 	if err := EncFile(os.Args[1],os.Args[2]); err != nil {
@@ -1042,7 +1042,7 @@ func main() {
 	}else {
 		fmt.Println("success")
 	}
-	*/
+
 	if err := PutDesApp(os.Args[1]);err != nil {
 		fmt.Println(err)
 	}

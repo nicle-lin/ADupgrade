@@ -11,7 +11,6 @@ import (
 var (
 	network = "tcp"
 	address = "127.0.0.1:7777"
-	factory = func() (net.Conn, error) { return net.Dial(network, address) }
 )
 
 func main() {
@@ -59,27 +58,22 @@ func client() error {
 	return nil
 }
 
-func handleServer(l net.Listener) error {
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println(err)
+func handleServer(conn net.Conn) error {
+	fmt.Printf("Established a connection with a client(remote address:%s)\n",conn.RemoteAddr())
+	for {
+		_, err := proto.ReadFrame(conn)
+		if err == io.EOF {
+			conn.Close() //we close conn after peer close conn
+			break
+		} else if err != nil {
+			fmt.Println(err)
+		}
+		_, err1 := proto.WriteFrame([]byte("hi,this is from server"), conn)
+		if err1 != nil {
+			fmt.Println(err1)
+		}
 	}
 
-	go func() {
-		for {
-			_, err := proto.ReadFrame(conn)
-			if err == io.EOF {
-				conn.Close()
-				break
-			} else if err != nil {
-				fmt.Println(err)
-			}
-			_, err1 := proto.WriteFrame([]byte("hi,this is from server"), conn)
-			if err1 != nil {
-				fmt.Println(err1)
-			}
-		}
-	}()
 	return nil
 }
 
@@ -91,6 +85,10 @@ func server() {
 	defer l.Close()
 
 	for {
-		go handleServer(l)
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println(err)
+		}
+		go handleServer(conn)
 	}
 }

@@ -46,7 +46,7 @@ func WriteFrame(b []byte, conn net.Conn) (n int, err error) {
 	return conn.Write(f.buff[:f.pos])
 }
 
-func ReadFrame(conn net.Conn) (n int, err error) {
+func ReadFrame(conn net.Conn) ( int,  error) {
 	//step 1: 分配frame长度的大小的空间
 	frameHeader := make([]byte, FRAME_HEADER_LEN)
 	var n int
@@ -89,7 +89,7 @@ func ReadFrame(conn net.Conn) (n int, err error) {
 	for {
 		n, err = conn.Read(frameBody[realNeed:])
 		if err != nil && err != io.EOF {
-			return fmt.Errorf("[Readpacket] read Sec Data error:", err)
+			return 0,fmt.Errorf("read frameBody error:", err)
 		} else if err == io.EOF {
 			return 0, err
 		}
@@ -100,6 +100,6 @@ func ReadFrame(conn net.Conn) (n int, err error) {
 		}
 
 	}
-
-	return frameLength, nil
+	fmt.Printf("Go message:%s\n",string(frameBody))
+	return int(frameLength), nil
 }

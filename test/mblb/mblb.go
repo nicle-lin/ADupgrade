@@ -7,6 +7,7 @@ import (
 	"github.com/nicle-lin/ADupgrade/test/mblb/proto"
 	"io"
 	"os"
+	"time"
 )
 
 var (
@@ -26,13 +27,16 @@ func main() {
 
 
 }
-func handleClient() error {
+func handleClient(ch chan <- bool) error {
 	conn, err := net.Dial(network, address)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-
+	defer func(){
+		ch <- true
+	}()
+	conn.SetDeadline(time.Now().Add(3*time.Second))
 	for i := 0; i < 10; i++ {
 		_, err1 := proto.WriteFrame([]byte("hi,this is from client"), conn)
 		if err1 != nil {
@@ -50,39 +54,49 @@ func handleClient() error {
 	for {
 		_, err := proto.ReadFrame(conn)
 		if err == io.EOF {
+			fmt.Println("connection has been close....")
 			break
 		} else if err != nil {
+			fmt.Println("read frome server error:",err)
 			return err
 		}
+
 	}
 
+	fmt.Println("close the connection.....")
 	return nil
 }
 
 func client() error {
-
+	ch := make(chan bool,10)
 	for i := 0; i < 10; i++ {
-		go handleClient()
+		go handleClient(ch)
+	}
+	for i := 0; i < 10; i++{
+		<- ch
+		fmt.Println("a connection has been close.....")
 	}
 	return nil
 }
 
-func handleServer(conn net.Conn) error {
+func handleServer(conn net.Conn)( err error) {
 	fmt.Printf("Established a connection with a client(remote address:%s)\n",conn.RemoteAddr())
+	defer conn.Close() //we close conn after peer close conn
 	for {
-		_, err := proto.ReadFrame(conn)
+		_, err = proto.ReadFrame(conn)
 		if err == io.EOF {
-			conn.Close() //we close conn after peer close conn
 			break
 		} else if err != nil {
 			fmt.Println(err)
+			return err
 		}
-		_, err1 := proto.WriteFrame([]byte("hi,this is from server"), conn)
-		if err1 != nil {
-			fmt.Println(err1)
+		_, err = proto.WriteFrame([]byte("hi,this is from server"), conn)
+		if err != nil {
+			fmt.Println(err)
+			return err
 		}
 	}
-
+	fmt.Println("has close connection:",err)
 	return nil
 }
 
@@ -99,5 +113,6 @@ func server() {
 			fmt.Println(err)
 		}
 		go handleServer(conn)
+
 	}
 }

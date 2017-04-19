@@ -6,16 +6,25 @@ import (
 	"fmt"
 	"github.com/nicle-lin/ADupgrade/test/mblb/proto"
 	"io"
+	"os"
 )
 
 var (
 	network = "tcp"
-	address = "127.0.0.1:7777"
+	address = os.Args[2]
 )
 
 func main() {
-	client()
-	server()
+	if os.Args[1] == "client"{
+		fmt.Println("start client....")
+		client()
+	}else if os.Args[1] == "server"{
+		fmt.Println("start server....")
+		server()
+	}
+
+
+
 }
 func handleClient() error {
 	conn, err := net.Dial(network, address)

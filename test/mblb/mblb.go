@@ -8,26 +8,62 @@ import (
 	"io"
 	"os"
 	"time"
+	"flag"
 )
 
 var (
 	network = "tcp"
-	address = os.Args[2]
+	//address = os.Args[2]
+	//address = "127.0.0.1:5000"
+	usage = `usage: mblb client|server ip:port [options]
+	it is designed to test AD mblb.
+options:
+	-c: Number of requests to run concurrently per second (client)
+	-t: how many second to latest to run (client)
+	-s: what message to send (less than 1020) (client)
+	-r: what message to response (less than 1020) (server)
+	`
+
+	c = flag.Int("c",50, "number of requests to run")
+	t = flag.Int64("t",60, "time")
+	s = flag.String("s","hi,this is from client","send message")
+	r = flag.String("r", "hi,this is server","response message")
 )
 
+func usageAndExit(msg string) {
+	if msg != "" {
+		fmt.Fprintf(os.Stderr, msg)
+		fmt.Fprintf(os.Stderr, "\n\n")
+	}
+	flag.Usage()
+	fmt.Fprintf(os.Stderr, "\n")
+	os.Exit(1)
+}
+
 func main() {
-	if os.Args[1] == "client"{
+	flag.Usage = func(){
+		fmt.Fprint(os.Stderr,usage)
+	}
+	flag.Parse()
+
+	if flag.NArg() < 1 {
+		usageAndExit("")
+	}
+	typ := flag.Args()[0]
+	address := flag.Args()[1]
+
+	if typ== "client"{
 		fmt.Println("start client....")
-		client()
-	}else if os.Args[1] == "server"{
+		client(address)
+	}else if typ == "server"{
 		fmt.Println("start server....")
-		server()
+		server(address)
 	}
 
 
 
 }
-func handleClient(ch chan <- bool) error {
+func handleClient(ch chan <- bool, address string) error {
 	conn, err := net.Dial(network, address)
 	if err != nil {
 		return err
@@ -38,7 +74,7 @@ func handleClient(ch chan <- bool) error {
 	}()
 	conn.SetDeadline(time.Now().Add(3*time.Second))
 	for i := 0; i < 10; i++ {
-		_, err1 := proto.WriteFrame([]byte("hi,this is from client"), conn)
+		_, err1 := proto.WriteFrame([]byte(*s), conn)
 		if err1 != nil {
 			return err1
 		}
@@ -67,12 +103,12 @@ func handleClient(ch chan <- bool) error {
 	return nil
 }
 
-func client() error {
-	ch := make(chan bool,10)
-	for i := 0; i < 10; i++ {
-		go handleClient(ch)
+func client(address string) error {
+	ch := make(chan bool,*c)
+	for i := 0; i < *c; i++ {
+		go handleClient(ch,address)
 	}
-	for i := 0; i < 10; i++{
+	for i := 0; i < *c; i++{
 		<- ch
 		fmt.Println("a connection has been close.....")
 	}
@@ -90,7 +126,7 @@ func handleServer(conn net.Conn)( err error) {
 			fmt.Println(err)
 			return err
 		}
-		_, err = proto.WriteFrame([]byte("hi,this is from server"), conn)
+		_, err = proto.WriteFrame([]byte(*r), conn)
 		if err != nil {
 			fmt.Println(err)
 			return err
@@ -100,13 +136,13 @@ func handleServer(conn net.Conn)( err error) {
 	return nil
 }
 
-func server() {
+func server(address string) {
 	l, err := net.Listen(network, address)
 	if err != nil {
 		fmt.Println(err)
 	}
 	defer l.Close()
-
+	fmt.Println("Listening on %s",address)
 	for {
 		conn, err := l.Accept()
 		if err != nil {

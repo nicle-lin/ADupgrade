@@ -22,10 +22,10 @@ options:
 	-r: what message to response (less than 1020) (server), default is hi,this is server
 	`
 
-	c = flag.Int("c",50, "number of requests to run")
-	t = flag.Int64("t",60, "time")
-	s = flag.String("s","hi,this is from client","send message")
-	r = flag.String("r", "hi,this is server","response message")
+	c = flag.Int("-c",50, "number of requests to run")
+	t = flag.Int64("-t",60, "time")
+	s = flag.String("-s","hi,this is from client","send message")
+	r = flag.String("-r", "hi,this is server","response message")
 )
 
 func usageAndExit(msg string) {

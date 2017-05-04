@@ -13,15 +13,13 @@ import (
 
 var (
 	network = "tcp"
-	//address = os.Args[2]
-	//address = "127.0.0.1:5000"
 	usage = `usage: mblb client|server ip:port [options]
 	it is designed to test AD mblb.
 options:
-	-c: Number of requests to run concurrently per second (client)
-	-t: how many second to latest to run (client)
-	-s: what message to send (less than 1020) (client)
-	-r: what message to response (less than 1020) (server)
+	-c: Number of requests to run concurrently per second (client),default is 50
+	-t: how many second to latest to run (client),default is 60s
+	-s: what message to send (less than 1020) (client), default is hi,this is from client
+	-r: what message to response (less than 1020) (server), default is hi,this is server
 	`
 
 	c = flag.Int("c",50, "number of requests to run")
@@ -46,7 +44,7 @@ func main() {
 	}
 	flag.Parse()
 
-	if flag.NArg() < 1 {
+	if flag.NArg() < 2 {
 		usageAndExit("")
 	}
 	typ := flag.Args()[0]
@@ -68,6 +66,11 @@ func handleClient(ch chan <- bool, address string) error {
 	if err != nil {
 		return err
 	}
+	defer func(){
+		if r := recover(); r != nil {
+			fmt.Println("receive message time out")
+		}
+	}()
 	defer conn.Close()
 	defer func(){
 		ch <- true

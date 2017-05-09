@@ -3,29 +3,36 @@ package main
 import (
 	"net"
 
+	"flag"
 	"fmt"
 	"github.com/nicle-lin/ADupgrade/test/mblb/proto"
 	"io"
 	"os"
+	"sync"
 	"time"
-	"flag"
 )
 
 var (
 	network = "tcp"
-	usage = `usage: mblb client|server ip:port [options]
+	usage   = `usage: mblb [options] client|server ip:port
 	it is designed to test AD mblb.
 options:
 	-c: Number of requests to run concurrently per second (client),default is 50
+	-q: how many request of every connection.... (client), default is 3
 	-t: how many second to latest to run (client),default is 60s
+	-p: connections/per second (client), default is 10
 	-s: what message to send (less than 1020) (client), default is hi,this is from client
 	-r: what message to response (less than 1020) (server), default is hi,this is server
+	-d: response to client after x second  (server), default is without delay
 	`
 
-	c = flag.Int("-c",50, "number of requests to run")
-	t = flag.Int64("-t",60, "time")
-	s = flag.String("-s","hi,this is from client","send message")
-	r = flag.String("-r", "hi,this is server","response message")
+	c = flag.Int("c", 50, "number of requests to run")
+	q = flag.Int("q", 1, "how many request of every connection....")
+	t = flag.Int64("t", 60, "time")
+	p = flag.Int("p", 10, "connections/per second")
+	s = flag.String("s", "hi,this is from client", "send message")
+	r = flag.String("r", "hi,this is server", "response message")
+	d = flag.Int64("d", 0, "delay")
 )
 
 func usageAndExit(msg string) {
@@ -39,8 +46,8 @@ func usageAndExit(msg string) {
 }
 
 func main() {
-	flag.Usage = func(){
-		fmt.Fprint(os.Stderr,usage)
+	flag.Usage = func() {
+		fmt.Fprint(os.Stderr, usage)
 	}
 	flag.Parse()
 
@@ -50,33 +57,27 @@ func main() {
 	typ := flag.Args()[0]
 	address := flag.Args()[1]
 
-	if typ== "client"{
+	if typ == "client" {
 		fmt.Println("start client....")
 		client(address)
-	}else if typ == "server"{
+	} else if typ == "server" {
 		fmt.Println("start server....")
 		server(address)
 	}
 
-
-
 }
-func handleClient(ch chan <- bool, address string) error {
+func handleClient(ch chan<- bool, address string) error {
 	conn, err := net.Dial(network, address)
 	if err != nil {
 		return err
 	}
-	defer func(){
-		if r := recover(); r != nil {
-			fmt.Println("receive message time out")
-		}
-	}()
 	defer conn.Close()
-	defer func(){
+	defer func() {
 		ch <- true
 	}()
-	conn.SetDeadline(time.Now().Add(3*time.Second))
-	for i := 0; i < 10; i++ {
+	conn.SetDeadline(time.Now().Add(3 * time.Second))
+
+	for i := 0; i < *q; i++ {
 		_, err1 := proto.WriteFrame([]byte(*s), conn)
 		if err1 != nil {
 			return err1
@@ -90,36 +91,41 @@ func handleClient(ch chan <- bool, address string) error {
 			return err3
 		}
 	}
+
 	for {
 		_, err := proto.ReadFrame(conn)
 		if err == io.EOF {
 			fmt.Println("connection has been close....")
 			break
 		} else if err != nil {
-			fmt.Println("read frome server error:",err)
+			fmt.Println("read frome server error:", err)
 			return err
 		}
 
 	}
 
-	fmt.Println("close the connection.....")
 	return nil
 }
 
 func client(address string) error {
-	ch := make(chan bool,*c)
+	ch := make(chan bool, *c)
+	var lr LimitRate
+	lr.SetRate(*p)
+
 	for i := 0; i < *c; i++ {
-		go handleClient(ch,address)
+		if lr.Limit() {
+			go handleClient(ch, address)
+		}
 	}
-	for i := 0; i < *c; i++{
-		<- ch
+	for i := 0; i < *c; i++ {
+		<-ch
 		fmt.Println("a connection has been close.....")
 	}
 	return nil
 }
 
-func handleServer(conn net.Conn)( err error) {
-	fmt.Printf("Established a connection with a client(remote address:%s)\n",conn.RemoteAddr())
+func handleServer(conn net.Conn) (err error) {
+	fmt.Printf("Established a connection with a client(remote address:%s)\n", conn.RemoteAddr())
 	defer conn.Close() //we close conn after peer close conn
 	for {
 		_, err = proto.ReadFrame(conn)
@@ -129,13 +135,14 @@ func handleServer(conn net.Conn)( err error) {
 			fmt.Println(err)
 			return err
 		}
+		time.Sleep(time.Duration(*d))
 		_, err = proto.WriteFrame([]byte(*r), conn)
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
 	}
-	fmt.Println("has close connection:",err)
+	fmt.Println("has close connection:", err)
 	return nil
 }
 
@@ -145,7 +152,7 @@ func server(address string) {
 		fmt.Println(err)
 	}
 	defer l.Close()
-	fmt.Println("Listening on %s",address)
+	fmt.Println("Listening on %s", address)
 	for {
 		conn, err := l.Accept()
 		if err != nil {
@@ -154,4 +161,39 @@ func server(address string) {
 		go handleServer(conn)
 
 	}
+}
+
+type LimitRate struct {
+	rate       int
+	interval   time.Duration
+	lastAction time.Time
+	lock       sync.Mutex
+}
+
+func (l *LimitRate) Limit() bool {
+	result := false
+	for {
+		l.lock.Lock()
+		//判断最后一次执行的时间与当前的时间间隔是否大于限速速率
+		if time.Now().Sub(l.lastAction) > l.interval {
+			l.lastAction = time.Now()
+			result = true
+		}
+		l.lock.Unlock()
+		if result {
+			return result
+		}
+		time.Sleep(l.interval)
+	}
+}
+
+//SetRate 设置Rate
+func (l *LimitRate) SetRate(r int) {
+	l.rate = r
+	l.interval = time.Microsecond * time.Duration(1000*1000/l.rate)
+}
+
+//GetRate 获取Rate
+func (l *LimitRate) GetRate() int {
+	return l.rate
 }

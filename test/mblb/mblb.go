@@ -75,7 +75,6 @@ func handleClient(ch chan<- bool, address string) error {
 	defer func() {
 		ch <- true
 	}()
-	conn.SetDeadline(time.Now().Add(3 * time.Second))
 
 	for i := 0; i < *q; i++ {
 		_, err1 := proto.WriteFrame([]byte(*s), conn)
@@ -92,7 +91,7 @@ func handleClient(ch chan<- bool, address string) error {
 		}
 	}
 
-	for {
+	for i := 0; i < *q; i++{
 		_, err := proto.ReadFrame(conn)
 		if err == io.EOF {
 			fmt.Println("connection has been close....")
@@ -126,23 +125,21 @@ func client(address string) error {
 
 func handleServer(conn net.Conn) (err error) {
 	fmt.Printf("Established a connection with a client(remote address:%s)\n", conn.RemoteAddr())
-	defer conn.Close() //we close conn after peer close conn
-	for {
-		_, err = proto.ReadFrame(conn)
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			fmt.Println(err)
-			return err
-		}
-		time.Sleep(time.Duration(*d))
-		_, err = proto.WriteFrame([]byte(*r), conn)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
+	_, err = proto.ReadFrame(conn)
+	if err == io.EOF {
+		fmt.Println("connection has been closed, can't read")
+	} else if err != nil {
+		fmt.Println(err)
+		return err
 	}
-	fmt.Println("has close connection:", err)
+	time.Sleep(time.Duration(*d))
+	_, err = proto.WriteFrame([]byte(*r), conn)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	defer conn.Close()
+	fmt.Println("closing the connection.....")
 	return nil
 }
 

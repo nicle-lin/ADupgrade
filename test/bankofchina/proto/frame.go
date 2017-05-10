@@ -13,7 +13,7 @@ import (
 
 const (
 	FRAME_HEADER_LEN = 10                 //a frame header is 10 bytes
-	FRAMEFLAG        = 0xf3dbd1d2f1f2b1b2 //a frame is started with "0xf3db"
+	FRAMEFLAG        = 0x01020304f2b1b2 //a frame is started with "0xf3db"
 	MAX_FRAME_LEN    = 1020 + FRAME_HEADER_LEN
 )
 
@@ -92,8 +92,8 @@ func ReadFrame(conn net.Conn,flag bool) (int, error) {
 
 
 		fmt.Println("Got ip:",sip)
-		fmt.Println("Got ip:",sport)
-		fmt.Println("other1:",other)
+		fmt.Println("Got port:",sport)
+		fmt.Println("other:",other)
 
 
 	}else{
@@ -109,8 +109,8 @@ func ReadFrame(conn net.Conn,flag bool) (int, error) {
 	if frameLength > MAX_FRAME_LEN {
 		return FRAME_HEADER_LEN, fmt.Errorf("frameLength wrong:0x%x", frameLength)
 	}
-	//step 3: 读取frame中的数据
-	frameBody := make([]byte, frameLength)
+	//step 3: 读取frame中的数据,data的长度是frameLength长度减去协议头部长度
+	frameBody := make([]byte, frameLength - 10)
 
 	for {
 		n, err = conn.Read(frameBody[realNeed:])

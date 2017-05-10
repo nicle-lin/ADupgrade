@@ -132,19 +132,22 @@ func client(address string) error {
 
 func handleServer(conn net.Conn) (err error) {
 	fmt.Printf("Established a connection with a client(remote address:%s)\n", conn.RemoteAddr())
-	_, err = proto.ReadFrame(conn,true)
-	if err == io.EOF {
-		fmt.Println("connection has been closed, can't read")
-	} else if err != nil {
-		fmt.Println(err)
-		return err
+	for {
+		_, err = proto.ReadFrame(conn,true)
+		if err == io.EOF {
+			fmt.Println("connection has been closed, can't read")
+		} else if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		time.Sleep(time.Second)
+		_, err = proto.WriteFrame([]byte(*r), conn)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
 	}
-	time.Sleep(time.Second)
-	_, err = proto.WriteFrame([]byte(*r), conn)
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
+
 	defer conn.Close()
 	fmt.Println("closing the connection.....")
 	return nil

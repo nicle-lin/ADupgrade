@@ -5,7 +5,7 @@ import (
 
 	"flag"
 	"fmt"
-	"github.com/nicle-lin/ADupgrade/test/mblb/proto"
+	"github.com/nicle-lin/ADupgrade/test/bankofchina/proto"
 	"io"
 	"os"
 	"sync"
@@ -36,7 +36,7 @@ options:
 
 
 )
-func (d *time.Duration) String() {}
+
 
 func init(){
 	//flag.Var(&d, "d", 0, "delay")
@@ -99,12 +99,12 @@ func handleClient(ch chan<- bool, address string) error {
 	}
 
 	for i := 0; i < *q; i++{
-		_, err := proto.ReadFrame(conn)
+		_, err := proto.ReadFrame(conn,false)
 		if err == io.EOF {
 			fmt.Println("connection has been close....")
 			break
 		} else if err != nil {
-			fmt.Println("read frome server error:", err)
+			fmt.Println("read frame server error:", err)
 			return err
 		}
 
@@ -132,14 +132,14 @@ func client(address string) error {
 
 func handleServer(conn net.Conn) (err error) {
 	fmt.Printf("Established a connection with a client(remote address:%s)\n", conn.RemoteAddr())
-	_, err = proto.ReadFrame(conn)
+	_, err = proto.ReadFrame(conn,true)
 	if err == io.EOF {
 		fmt.Println("connection has been closed, can't read")
 	} else if err != nil {
 		fmt.Println(err)
 		return err
 	}
-	time.Sleep(time.Duration(*d ) * time.Second)
+	time.Sleep(time.Second)
 	_, err = proto.WriteFrame([]byte(*r), conn)
 	if err != nil {
 		fmt.Println(err)

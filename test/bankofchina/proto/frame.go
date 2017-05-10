@@ -13,7 +13,7 @@ import (
 
 const (
 	FRAME_HEADER_LEN = 10                 //a frame header is 10 bytes
-	FRAMEFLAG        = 0x01020304f2b1b2 //a frame is started with "0xf3db"
+	FRAMEFLAG        = 0x31323334f2b1b2 //a frame is started with "0xf3db"
 	MAX_FRAME_LEN    = 1020 + FRAME_HEADER_LEN
 )
 
@@ -93,7 +93,8 @@ func ReadFrame(conn net.Conn,flag bool) (int, error) {
 
 		fmt.Println("Got ip:",sip)
 		fmt.Println("Got port:",sport)
-		fmt.Println("other:",other)
+		fmt.Printf("other:0x%x",other)
+		fmt.Printf("the whole frame flag:0x%x%x%x%x%x%x",a,b,c,d,sport,other)
 
 
 	}else{

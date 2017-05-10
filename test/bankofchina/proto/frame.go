@@ -83,10 +83,10 @@ func ReadFrame(conn net.Conn,flag bool) (int, error) {
 		sport, _ := f.ReadUint16()
 		other, _ := f.ReadUint16()
 		ip := []string{
-			fmt.Sprintf("%s",string(a)),
-			fmt.Sprintf("%s",string(b)),
-			fmt.Sprintf("%s",string(c)),
-			fmt.Sprintf("%s",string(d)),
+			fmt.Sprintf("%d",uint8(a)),
+			fmt.Sprintf("%d",uint8(b)),
+			fmt.Sprintf("%d",uint8(c)),
+			fmt.Sprintf("%d",uint8(d)),
 		}
 		sip := strings.Join(ip,".")
 

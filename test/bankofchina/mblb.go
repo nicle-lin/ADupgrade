@@ -135,7 +135,8 @@ func handleServer(conn net.Conn) (err error) {
 	for {
 		_, err = proto.ReadFrame(conn,true)
 		if err == io.EOF {
-			fmt.Println("connection has been closed, can't read")
+			fmt.Println("connection has been closed by client")
+			break
 		} else if err != nil {
 			fmt.Println(err)
 			return err
@@ -147,9 +148,6 @@ func handleServer(conn net.Conn) (err error) {
 			return err
 		}
 	}
-
-	defer conn.Close()
-	fmt.Println("closing the connection.....")
 	return nil
 }
 

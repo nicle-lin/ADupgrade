@@ -98,7 +98,7 @@ func handleClient(ch chan<- bool, address string) error {
 		}
 	}
 
-	for i := 0; i < *q; i++{
+	for i := 0; i < *q * 3; i++{
 		_, err := proto.ReadFrame(conn,false)
 		if err == io.EOF {
 			fmt.Println("connection has been close....")

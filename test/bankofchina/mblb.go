@@ -82,6 +82,7 @@ func handleClient(ch chan<- bool, address string) error {
 	}()
 
 	randomChan := make(chan int, *q)
+	doneChan := make(chan struct{},1)
 	//send
 	go func(){
 		for i := 0; i < *q; i++ {
@@ -110,9 +111,11 @@ func handleClient(ch chan<- bool, address string) error {
 			}
 		}
 		close(randomChan)
+		doneChan <- struct {}{}
 	}()
 
-
+	<- doneChan
+	close(doneChan)
 	return nil
 }
 

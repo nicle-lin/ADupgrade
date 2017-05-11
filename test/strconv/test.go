@@ -2,9 +2,9 @@ package main
 
 import (
 	"time"
-	"strconv"
 	"math/rand"
 	"fmt"
+	"github.com/nicle-lin/ADupgrade/test/bankofchina/proto"
 )
 
 func GetRandomString(length int) string {
@@ -19,6 +19,15 @@ func GetRandomString(length int) string {
 	return string(result)
 }
 func main() {
+	num := proto.GetRandomNumber(1)
+	frame,err := proto.BuildFrame([]byte("i am gubl"),num)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("%v",frame)
+
+/*
 	//str := GetRandomString(16)
 	str := 0xdaAEbA39B7EAF8Ff
 	fmt.Println(str)
@@ -33,4 +42,5 @@ func main() {
 	}
 	fmt.Println(num)
 	fmt.Printf("%v",num)
+*/
 }

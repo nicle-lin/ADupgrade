@@ -10,7 +10,7 @@ import (
 	"os"
 	"sync"
 	"time"
-	"strconv"
+
 )
 
 var (
@@ -81,32 +81,35 @@ func handleClient(ch chan<- bool, address string) error {
 		ch <- true
 	}()
 
-	flagChan := make(chan string, *q)
+	randomChan := make(chan int, *q)
+	//send
 	go func(){
 		for i := 0; i < *q; i++ {
-			frameFlag := GetRandomString(16)
-			_, err1 := proto.WriteFrame([]byte(*s),frameFlag, conn)
-			if err1 != nil {
-				return err1
+
+			randomNum := proto.GetRandomNumber(1)
+			_, err := proto.WriteFrame([]byte(*s),randomNum, conn)
+			if err != nil {
+				fmt.Println(err)
+				return
 			}
-			flagChan <- frameFlag
+			randomChan <- randomNum
 		}
 	}()
 
+	//receive
 	go func(){
 		for i := 0; i < *q; i++ {
-			frameFlag := <- flagChan
-			_, err := proto.ReadFrame(conn,frameFlag, false)
+			randomNum := <- randomChan
+			_, err := proto.ReadFrame(conn,randomNum, false)
 			if err == io.EOF {
 				fmt.Println("connection has been close....")
 				break
 			} else if err != nil {
 				fmt.Println("read frame server error:", err)
-				return err
+				return
 			}
-
 		}
-		close(flagChan)
+		close(randomChan)
 	}()
 
 
@@ -133,7 +136,7 @@ func client(address string) error {
 func handleServer(conn net.Conn) (err error) {
 	fmt.Printf("Established a connection with a client(remote address:%s)\n", conn.RemoteAddr())
 	for {
-		_, err = proto.ReadFrame(conn,proto.FRAMEFLAG, true)
+		_, err = proto.ReadFrame(conn,1, true)
 		if err == io.EOF {
 			fmt.Println("connection has been closed by client")
 			break
@@ -142,7 +145,7 @@ func handleServer(conn net.Conn) (err error) {
 			return err
 		}
 		time.Sleep(time.Second)
-		_, err = proto.WriteFrame([]byte(*r), proto.FRAMEFLAG,conn)
+		_, err = proto.WriteFrame([]byte(*r),1,conn)
 		if err != nil {
 			fmt.Println(err)
 			return err

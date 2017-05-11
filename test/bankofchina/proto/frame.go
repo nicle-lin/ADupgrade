@@ -5,6 +5,9 @@ import (
 	"io"
 	"net"
 	"strings"
+	"time"
+	"math/rand"
+	"strconv"
 )
 
 /* base frame
@@ -14,7 +17,9 @@ import (
 const (
 	FRAME_HEADER_LEN = 10                 //a frame header is 10 bytes
 	FRAMEFLAG        = 0x31323334f1f2b1b2 //a frame is started with "0xf3db"
-	MAX_FRAME_LEN    = 1020 + FRAME_HEADER_LEN
+	FRAMEFLAG1        = 0x35363738d3d4a3a4 //a frame is started with "0xf3db"
+
+	MAX_FRAME_LEN    = 65535
 )
 
 type Frame interface {
@@ -27,108 +32,140 @@ type MBLB struct {
 	net.Conn
 }
 
+func GetRandomNumber(length int) int {
+	str := "123456789"
+	bytes := []byte(str)
+	result := []byte{}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < length; i++ {
+		result = append(result, bytes[r.Intn(len(bytes))])
+	}
+	num, err :=  strconv.Atoi(string(result))
+	if err != nil {
+		return -1
+	}
+	return num
+}
+
+
 /*
  * 格式:[2byte][8byte][data]
  *      前两2个是协议长度(10+data的长度)　　后面8个是标志　　　data为真实数据
  */
-func WriteFrame(b []byte,frameFlag string, conn net.Conn) (n int, err error) {
-	length := len(b)
-	if length > MAX_FRAME_LEN {
-		return 0, fmt.Errorf("message too long\n")
+func BuildFrame(data []byte, randomNum int) (MultiFrame []byte,err error) {
+	for i := 0; i < randomNum; i++ {
+		length := len(data)
+		if length > MAX_FRAME_LEN {
+			return nil, fmt.Errorf("message too long\n")
+		}
+		frameHeader := make([]byte, FRAME_HEADER_LEN + length)
+		f := NewBEStream(frameHeader)
+		f.WriteUint16(uint16(len(data)) + 10)
+		f.WriteUint64(FRAMEFLAG1)
+		err := f.WriteBuff(data)
+		if err != nil {
+			return nil, err
+		}
+		MultiFrame = append(MultiFrame,f.buff[:f.pos]...)
 	}
-	frameHeader := make([]byte, FRAME_HEADER_LEN + length)
-	f := NewBEStream(frameHeader)
-	f.WriteUint16(uint16(len(b)) + 10)
-	f.WriteUint64(frameFlag)
-	err = f.WriteBuff(b)
-	if err != nil {
-		return 0, err
-	}
-	return conn.Write(f.buff[:f.pos])
+
+	return MultiFrame, nil
 }
 
-func ReadFrame(conn net.Conn,expectFrameFlag string,flag bool) (int, error) {
-	//step 1: 分配frame头部长度的大小的空间
-	frameHeader := make([]byte, FRAME_HEADER_LEN)
-	var n int
-	var err error
-	var realNeed int = 0
-	//step 2:　读取frame头部长度大小的数据
-	for {
-		n, err = conn.Read(frameHeader[realNeed:])
-		if err != nil && err != io.EOF {
-			return 0, fmt.Errorf("Read Frame error:%s", err)
-		} else if err == io.EOF {
-			return 0, err
+
+func WriteFrame(data[]byte,randomNum int, conn net.Conn) (int, error) {
+	frame , err := BuildFrame(data,randomNum)
+	if err != nil{
+		return 0, err
+	}
+	return conn.Write(frame)
+}
+
+func ReadFrame(conn net.Conn,randomNum int,flag bool) (int, error) {
+	for i := 0; i < randomNum; i++ {
+		//step 1: 分配frame头部长度的大小的空间
+		frameHeader := make([]byte, FRAME_HEADER_LEN)
+		var n int
+		var err error
+		var realNeed int = 0
+		//step 2:　读取frame头部长度大小的数据
+		for {
+			n, err = conn.Read(frameHeader[realNeed:])
+			if err != nil && err != io.EOF {
+				return 0, fmt.Errorf("Read Frame error:%s", err)
+			} else if err == io.EOF {
+				return 0, err
+			}
+			realNeed = realNeed + n
+			if realNeed == FRAME_HEADER_LEN || 0 == n {
+				realNeed = 0
+				break
+			}
 		}
-		realNeed = realNeed + n
-		if realNeed == FRAME_HEADER_LEN || 0 == n {
-			realNeed = 0
-			break
+
+		f := NewBEStream(frameHeader)
+
+		frameLength, errLength := f.ReadUint16()
+		if errLength != nil {
+			return FRAME_HEADER_LEN, fmt.Errorf("read frame length is wrong: %s\n", errLength)
 		}
+		//服务端收数据不需要检验标志,把标志打出来
+		if flag {
+			a, _ := f.ReadByte()
+			b, _ := f.ReadByte()
+			c, _ := f.ReadByte()
+			d, _ := f.ReadByte()
+			sport, _ := f.ReadUint16()
+			other, _ := f.ReadUint16()
+			ip := []string{
+				fmt.Sprintf("%d",uint8(a)),
+				fmt.Sprintf("%d",uint8(b)),
+				fmt.Sprintf("%d",uint8(c)),
+				fmt.Sprintf("%d",uint8(d)),
+			}
+			sip := strings.Join(ip,".")
+
+
+			fmt.Println("Got ip:",sip)
+			fmt.Println("Got port:",sport)
+			fmt.Printf("other:0x%x\n",other)
+			fmt.Printf("the whole frame flag:0x%x%x%x%x%x%x\n",a,b,c,d,sport,other)
+
+
+		}else{
+			frameFlag, errFlag := f.ReadUint64()
+			if errFlag != nil {
+				return FRAME_HEADER_LEN, fmt.Errorf("read frame flag is wrong:%s\n", frameFlag)
+			}
+			if frameFlag != FRAMEFLAG1 {
+				fmt.Printf("expect flag: Got flag: 0x%x\n",frameFlag)
+				return FRAME_HEADER_LEN, fmt.Errorf("frame flag is wrong:0x%x", frameFlag)
+			}
+			fmt.Printf("expect flag: == Got flag: 0x%x\n",frameFlag)
+		}
+
+		if frameLength > MAX_FRAME_LEN {
+			return FRAME_HEADER_LEN, fmt.Errorf("frameLength wrong:0x%x", frameLength)
+		}
+		//step 3: 读取frame中的数据,data的长度是frameLength长度减去协议头部长度
+		frameBody := make([]byte, frameLength - 10)
+
+		for {
+			n, err = conn.Read(frameBody[realNeed:])
+			if err != nil && err != io.EOF {
+				return 0, fmt.Errorf("read frameBody error:", err)
+			} else if err == io.EOF {
+				return 0, err
+			}
+			realNeed = realNeed + n
+			if realNeed == int(frameLength) || n == 0 {
+				realNeed = 0
+				break
+			}
+
+		}
+		fmt.Printf("Got message:%s\n", string(frameBody))
 	}
 
-	f := NewBEStream(frameHeader)
-
-	frameLength, errLength := f.ReadUint16()
-	if errLength != nil {
-		return FRAME_HEADER_LEN, fmt.Errorf("read frame length is wrong: %s\n", errLength)
-	}
-	//服务端收数据不需要检验标志,把标志打出来
-	if flag {
-		a, _ := f.ReadByte()
-		b, _ := f.ReadByte()
-		c, _ := f.ReadByte()
-		d, _ := f.ReadByte()
-		sport, _ := f.ReadUint16()
-		other, _ := f.ReadUint16()
-		ip := []string{
-			fmt.Sprintf("%d",uint8(a)),
-			fmt.Sprintf("%d",uint8(b)),
-			fmt.Sprintf("%d",uint8(c)),
-			fmt.Sprintf("%d",uint8(d)),
-		}
-		sip := strings.Join(ip,".")
-
-
-		fmt.Println("Got ip:",sip)
-		fmt.Println("Got port:",sport)
-		fmt.Printf("other:0x%x\n",other)
-		fmt.Printf("the whole frame flag:0x%x%x%x%x%x%x\n",a,b,c,d,sport,other)
-
-
-	}else{
-		frameFlag, errFlag := f.ReadUint64()
-		if errFlag != nil {
-			return FRAME_HEADER_LEN, fmt.Errorf("read frame flag is wrong:%s\n", frameFlag)
-		}
-		if frameFlag != expectFrameFlag {
-			fmt.Printf("expect flag: 0x%x\n Got flag: 0x%x\n",expectFrameFlag,frameFlag)
-			return FRAME_HEADER_LEN, fmt.Errorf("frame flag is wrong:0x%x", frameFlag)
-		}
-		fmt.Printf("expect flag: 0x%x == Got flag: 0x%x\n",expectFrameFlag,frameFlag)
-	}
-
-	if frameLength > MAX_FRAME_LEN {
-		return FRAME_HEADER_LEN, fmt.Errorf("frameLength wrong:0x%x", frameLength)
-	}
-	//step 3: 读取frame中的数据,data的长度是frameLength长度减去协议头部长度
-	frameBody := make([]byte, frameLength - 10)
-
-	for {
-		n, err = conn.Read(frameBody[realNeed:])
-		if err != nil && err != io.EOF {
-			return 0, fmt.Errorf("read frameBody error:", err)
-		} else if err == io.EOF {
-			return 0, err
-		}
-		realNeed = realNeed + n
-		if realNeed == int(frameLength) || n == 0 {
-			realNeed = 0
-			break
-		}
-
-	}
-	fmt.Printf("Got message:%s\n", string(frameBody))
-	return int(frameLength), nil
+	return 0, nil
 }

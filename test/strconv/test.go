@@ -19,8 +19,8 @@ func GetRandomString(length int) string {
 	return string(result)
 }
 func main() {
-	num := proto.GetRandomNumber(1)
-	frame,err := proto.BuildFrame([]byte("i am gubl"),num)
+	//num := proto.GetRandomNumber(1)
+	frame,err := proto.BuildFrame([]byte("i am gubl"),1)
 	if err != nil {
 		fmt.Println(err)
 		return

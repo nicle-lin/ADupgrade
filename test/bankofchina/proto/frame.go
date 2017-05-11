@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 	"math/rand"
-	"strconv"
 )
 
 /* base frame
@@ -32,19 +31,9 @@ type MBLB struct {
 	net.Conn
 }
 
-func GetRandomNumber(length int) int {
-	str := "123456789"
-	bytes := []byte(str)
-	result := []byte{}
+func GetRandomNumber(number int) int {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for i := 0; i < length; i++ {
-		result = append(result, bytes[r.Intn(len(bytes))])
-	}
-	num, err :=  strconv.Atoi(string(result))
-	if err != nil {
-		return -1
-	}
-	return num
+	return r.Intn(number)
 }
 
 
@@ -54,17 +43,20 @@ func GetRandomNumber(length int) int {
  */
 func BuildFrame(data []byte, randomNum int) (MultiFrame []byte,err error) {
 	for i := 0; i < randomNum; i++ {
-		length := len(data)
+		lenScale := GetRandomNumber(500)
+		length := len(data) * lenScale
 		if length > MAX_FRAME_LEN {
 			return nil, fmt.Errorf("message too long\n")
 		}
 		frameHeader := make([]byte, FRAME_HEADER_LEN + length)
 		f := NewBEStream(frameHeader)
-		f.WriteUint16(uint16(len(data)) + 10)
+		f.WriteUint16(uint16(length) + 10)
 		f.WriteUint64(FRAMEFLAG1)
-		err := f.WriteBuff(data)
-		if err != nil {
-			return nil, err
+		for i := 0; i < lenScale; i++{
+			err = f.WriteBuff(data)
+			if err != nil {
+				return nil, err
+			}
 		}
 		MultiFrame = append(MultiFrame,f.buff[:f.pos]...)
 	}

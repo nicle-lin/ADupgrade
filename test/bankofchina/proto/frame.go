@@ -31,7 +31,7 @@ type MBLB struct {
  * 格式:[2byte][8byte][data]
  *      前两2个是协议长度(10+data的长度)　　后面8个是标志　　　data为真实数据
  */
-func WriteFrame(b []byte, conn net.Conn) (n int, err error) {
+func WriteFrame(b []byte,frameFlag string, conn net.Conn) (n int, err error) {
 	length := len(b)
 	if length > MAX_FRAME_LEN {
 		return 0, fmt.Errorf("message too long\n")
@@ -39,7 +39,7 @@ func WriteFrame(b []byte, conn net.Conn) (n int, err error) {
 	frameHeader := make([]byte, FRAME_HEADER_LEN + length)
 	f := NewBEStream(frameHeader)
 	f.WriteUint16(uint16(len(b)) + 10)
-	f.WriteUint64(FRAMEFLAG)
+	f.WriteUint64(frameFlag)
 	err = f.WriteBuff(b)
 	if err != nil {
 		return 0, err
@@ -47,7 +47,7 @@ func WriteFrame(b []byte, conn net.Conn) (n int, err error) {
 	return conn.Write(f.buff[:f.pos])
 }
 
-func ReadFrame(conn net.Conn,flag bool) (int, error) {
+func ReadFrame(conn net.Conn,expectFrameFlag string,flag bool) (int, error) {
 	//step 1: 分配frame头部长度的大小的空间
 	frameHeader := make([]byte, FRAME_HEADER_LEN)
 	var n int
@@ -102,9 +102,11 @@ func ReadFrame(conn net.Conn,flag bool) (int, error) {
 		if errFlag != nil {
 			return FRAME_HEADER_LEN, fmt.Errorf("read frame flag is wrong:%s\n", frameFlag)
 		}
-		if frameFlag != FRAMEFLAG {
+		if frameFlag != expectFrameFlag {
+			fmt.Printf("expect flag: 0x%x\n Got flag: 0x%x\n",expectFrameFlag,frameFlag)
 			return FRAME_HEADER_LEN, fmt.Errorf("frame flag is wrong:0x%x", frameFlag)
 		}
+		fmt.Printf("expect flag: 0x%x == Got flag: 0x%x\n",expectFrameFlag,frameFlag)
 	}
 
 	if frameLength > MAX_FRAME_LEN {

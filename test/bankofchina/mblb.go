@@ -1,15 +1,16 @@
 package main
 
 import (
-	"net"
-
 	"flag"
 	"fmt"
 	"github.com/nicle-lin/ADupgrade/test/bankofchina/proto"
 	"io"
+	"math/rand"
+	"net"
 	"os"
 	"sync"
 	"time"
+	"strconv"
 )
 
 var (
@@ -33,12 +34,9 @@ options:
 	s = flag.String("s", "hi,this is from client", "send message")
 	r = flag.String("r", "hi,this is server", "response message")
 	d time.Duration
-
-
 )
 
-
-func init(){
+func init() {
 	//flag.Var(&d, "d", 0, "delay")
 }
 
@@ -83,32 +81,34 @@ func handleClient(ch chan<- bool, address string) error {
 		ch <- true
 	}()
 
-	for i := 0; i < *q; i++ {
-		_, err1 := proto.WriteFrame([]byte(*s), conn)
-		if err1 != nil {
-			return err1
+	flagChan := make(chan string, *q)
+	go func(){
+		for i := 0; i < *q; i++ {
+			frameFlag := GetRandomString(16)
+			_, err1 := proto.WriteFrame([]byte(*s),frameFlag, conn)
+			if err1 != nil {
+				return err1
+			}
+			flagChan <- frameFlag
 		}
-		_, err2 := proto.WriteFrame([]byte("how are you"), conn)
-		if err2 != nil {
-			return err2
-		}
-		_, err3 := proto.WriteFrame([]byte("what is your name"), conn)
-		if err3 != nil {
-			return err3
-		}
-	}
+	}()
 
-	for i := 0; i < *q * 3; i++{
-		_, err := proto.ReadFrame(conn,false)
-		if err == io.EOF {
-			fmt.Println("connection has been close....")
-			break
-		} else if err != nil {
-			fmt.Println("read frame server error:", err)
-			return err
-		}
+	go func(){
+		for i := 0; i < *q; i++ {
+			frameFlag := <- flagChan
+			_, err := proto.ReadFrame(conn,frameFlag, false)
+			if err == io.EOF {
+				fmt.Println("connection has been close....")
+				break
+			} else if err != nil {
+				fmt.Println("read frame server error:", err)
+				return err
+			}
 
-	}
+		}
+		close(flagChan)
+	}()
+
 
 	return nil
 }
@@ -133,7 +133,7 @@ func client(address string) error {
 func handleServer(conn net.Conn) (err error) {
 	fmt.Printf("Established a connection with a client(remote address:%s)\n", conn.RemoteAddr())
 	for {
-		_, err = proto.ReadFrame(conn,true)
+		_, err = proto.ReadFrame(conn,proto.FRAMEFLAG, true)
 		if err == io.EOF {
 			fmt.Println("connection has been closed by client")
 			break
@@ -142,7 +142,7 @@ func handleServer(conn net.Conn) (err error) {
 			return err
 		}
 		time.Sleep(time.Second)
-		_, err = proto.WriteFrame([]byte(*r), conn)
+		_, err = proto.WriteFrame([]byte(*r), proto.FRAMEFLAG,conn)
 		if err != nil {
 			fmt.Println(err)
 			return err
@@ -201,4 +201,15 @@ func (l *LimitRate) SetRate(r int) {
 //GetRate 获取Rate
 func (l *LimitRate) GetRate() int {
 	return l.rate
+}
+
+func GetRandomString(length int) string {
+	str := "0123456789abcdefABCDEF"
+	bytes := []byte(str)
+	result := []byte{}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < length; i++ {
+		result = append(result, bytes[r.Intn(len(bytes))])
+	}
+	return string(result)
 }

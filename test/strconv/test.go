@@ -4,7 +4,7 @@ import (
 	"time"
 	"math/rand"
 	"fmt"
-	"github.com/nicle-lin/ADupgrade/test/bankofchina/proto"
+	//"github.com/nicle-lin/ADupgrade/test/bankofchina/proto"
 )
 
 func GetRandomString(length int) string {
@@ -18,14 +18,24 @@ func GetRandomString(length int) string {
 
 	return string(result)
 }
+
+func GetRandomNumber() uint64{
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	return r.Uint64()
+}
+
 func main() {
-	//num := proto.GetRandomNumber(1)
+	num := GetRandomNumber()
+	fmt.Println(num)
+	fmt.Printf("%x",num)
+	/*
 	frame,err := proto.BuildFrame([]byte("i am gubl"),1)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	fmt.Printf("%v",frame)
+	*/
 
 /*
 	//str := GetRandomString(16)

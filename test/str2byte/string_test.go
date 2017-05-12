@@ -27,6 +27,7 @@ func TestPointer(t *testing.T) {
 		"",
 		"hello",
 		"hello",
+		"34f1f2d3d4",
 		fmt.Sprintf(""),
 		fmt.Sprintf(""),
 		fmt.Sprintf("hello"),

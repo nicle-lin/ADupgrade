@@ -71,6 +71,12 @@ func main() {
 	}
 
 }
+
+type Message struct {
+	random int
+	frameFlag uint64
+}
+
 func handleClient(ch chan<- bool, address string) error {
 	conn, err := net.Dial(network, address)
 	if err != nil {
@@ -86,14 +92,14 @@ func handleClient(ch chan<- bool, address string) error {
 	//send
 	go func(){
 		for i := 0; i < *q; i++ {
-
 			randomNum := proto.GetRandomNumber(1)
-			_, err := proto.WriteFrame([]byte(*s),randomNum, conn)
+			_, err := proto.WriteFrame([]byte(*s),randomNum,0, conn)
 			if err != nil {
 				fmt.Println(err)
 				return
 			}
 			randomChan <- randomNum
+			time.Sleep( time.Duration(proto.GetRandomNumber(10000)) * time.Millisecond)
 		}
 	}()
 
@@ -136,10 +142,10 @@ func client(address string) error {
 	return nil
 }
 
-func handleServer(conn net.Conn) (err error) {
+func handleServer(conn net.Conn)error {
 	fmt.Printf("Established a connection with a client(remote address:%s)\n", conn.RemoteAddr())
 	for {
-		_, err = proto.ReadFrame(conn,1, true)
+		frameFlag, err := proto.ReadFrame(conn,1, true)
 		if err == io.EOF {
 			fmt.Println("connection has been closed by client")
 			break
@@ -147,8 +153,8 @@ func handleServer(conn net.Conn) (err error) {
 			fmt.Println(err)
 			return err
 		}
-		time.Sleep(time.Second)
-		_, err = proto.WriteFrame([]byte(*r),1,conn)
+		time.Sleep( time.Duration(proto.GetRandomNumber(10000)) * time.Millisecond)
+		_, err = proto.WriteFrame([]byte(*r),1,frameFlag,conn)
 		if err != nil {
 			fmt.Println(err)
 			return err

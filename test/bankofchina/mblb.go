@@ -92,7 +92,8 @@ func handleClient(ch chan<- bool, address string) error {
 	//send
 	go func(){
 		for i := 0; i < *q; i++ {
-			randomNum := proto.GetRandomNumber(1)
+			fmt.Println("in the send")
+			randomNum := proto.GetRandomNumber(10)  //it only send sync packet when the randomNum is zero
 			_, err := proto.WriteFrame([]byte(*s),randomNum,0, conn)
 			if err != nil {
 				fmt.Println(err)
@@ -101,11 +102,13 @@ func handleClient(ch chan<- bool, address string) error {
 			randomChan <- randomNum
 			time.Sleep( time.Duration(proto.GetRandomNumber(10000)) * time.Millisecond)
 		}
+		close(randomChan)
 	}()
 
 	//receive
 	go func(){
 		for i := 0; i < *q; i++ {
+			fmt.Println("in the receive")
 			randomNum := <- randomChan
 			_, err := proto.ReadFrame(conn,randomNum, false)
 			if err == io.EOF {
@@ -116,12 +119,14 @@ func handleClient(ch chan<- bool, address string) error {
 				return
 			}
 		}
-		close(randomChan)
+		//close(randomChan)不要在接收端方向关闭
 		doneChan <- struct {}{}
+		close(doneChan)
 	}()
 
 	<- doneChan
 	close(doneChan)
+	fmt.Println("handleclient .....")
 	return nil
 }
 
@@ -135,10 +140,13 @@ func client(address string) error {
 			go handleClient(ch, address)
 		}
 	}
+
 	for i := 0; i < *c; i++ {
 		<-ch
 		fmt.Println("a connection has been close.....")
 	}
+	
+	close(ch)
 	return nil
 }
 
@@ -154,6 +162,7 @@ func handleServer(conn net.Conn)error {
 			return err
 		}
 		time.Sleep( time.Duration(proto.GetRandomNumber(10000)) * time.Millisecond)
+		fmt.Println("the server got the second frame:",frameFlag)
 		_, err = proto.WriteFrame([]byte(*r),1,frameFlag,conn)
 		if err != nil {
 			fmt.Println(err)
@@ -169,7 +178,7 @@ func server(address string) {
 		fmt.Println(err)
 	}
 	defer l.Close()
-	fmt.Println("Listening on %s", address)
+	fmt.Println("Listening on ", address)
 	for {
 		conn, err := l.Accept()
 		if err != nil {

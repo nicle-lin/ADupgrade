@@ -54,17 +54,18 @@ func GetRandom64Number() uint64{
  */
 func BuildFrame(data []byte, randomNum int, isServer uint64) (MultiFrame []byte,err error) {
 	for i := 0; i < randomNum; i++ {
-		lenScale := GetRandomNumber(500)
+		lenScale := GetRandomNumber(50) + 1 //at least one, it can't be zero
 		length := len(data) * lenScale
 		if length > MAX_FRAME_LEN {
 			return nil, fmt.Errorf("message too long\n")
 		}
-		frameHeader := make([]byte, FRAME_HEADER_LEN + length)
+		frameHeader := make([]byte, FRAME_HEADER_LEN + length + 8)
+		fmt.Printf("lenScale:%d, length of data:%d, length:%d\n",lenScale,len(data),length)
 		f := NewBEStream(frameHeader)
 		f.WriteUint16(uint16(length) + 10 + 8)
 		frameFlag := GetRandom64Number()
 		f.WriteUint64(frameFlag)
-		if isServer == 0 {   //如果是server端，需要把读到frameFlag传进来
+		if isServer != 0 {   //如果是server端，需要把读到frameFlag传进来
 			f.WriteUint64(isServer) //写两遍
 		}else {
 			//如果client端，则不需要传进来，传个0就行了
@@ -85,6 +86,7 @@ func BuildFrame(data []byte, randomNum int, isServer uint64) (MultiFrame []byte,
 
 
 func WriteFrame(data[]byte,randomNum int,isServer uint64, conn net.Conn) (int, error) {
+	fmt.Println("in the writeframe, the randomnum:",randomNum)
 	frame , err := BuildFrame(data,randomNum,isServer)
 	if err != nil{
 		return 0, err
@@ -95,7 +97,7 @@ func WriteFrame(data[]byte,randomNum int,isServer uint64, conn net.Conn) (int, e
 func ReadFrame(conn net.Conn,randomNum int,flag bool) (frameFlag2 uint64,err error) {
 	for i := 0; i < randomNum; i++ {
 		//step 1: 分配frame头部长度的大小的空间
-		frameHeader := make([]byte, FRAME_HEADER_LEN)
+		frameHeader := make([]byte, FRAME_HEADER_LEN + 8)
 		var n int
 		var realNeed int = 0
 		//step 2:　读取frame头部长度大小的数据
@@ -107,7 +109,7 @@ func ReadFrame(conn net.Conn,randomNum int,flag bool) (frameFlag2 uint64,err err
 				return 0, err
 			}
 			realNeed = realNeed + n
-			if realNeed == FRAME_HEADER_LEN || 0 == n {
+			if realNeed == FRAME_HEADER_LEN + 8|| 0 == n {
 				realNeed = 0
 				break
 			}
@@ -128,7 +130,7 @@ func ReadFrame(conn net.Conn,randomNum int,flag bool) (frameFlag2 uint64,err err
 			sport, _ := f.ReadUint16()
 			other, _ := f.ReadUint16()
 
-			frameFlag2,_ = f.ReadUint64() //服务端方向，把读到的frameFlag返回，然后再发送回客户端
+
 			ip := []string{
 				fmt.Sprintf("%d",uint8(a)),
 				fmt.Sprintf("%d",uint8(b)),
@@ -143,14 +145,21 @@ func ReadFrame(conn net.Conn,randomNum int,flag bool) (frameFlag2 uint64,err err
 			fmt.Printf("other:0x%x\n",other)
 			fmt.Printf("the whole frame flag:0x%x%x%x%x%x%x\n",a,b,c,d,sport,other)
 
+			frameFlag2,err = f.ReadUint64() //服务端方向，把读到的frameFlag返回，然后再发送回客户端
+			fmt.Println("in the server, got second frameFlag:",frameFlag2)
+			if err != nil {
+				return 0, err
+			}
+
 
 		}else{
 			frameFlag, errFlag := f.ReadUint64()   //第一个frame会被处理，
 			if errFlag != nil {
 				return FRAME_HEADER_LEN, fmt.Errorf("read frame flag is wrong:%s\n", frameFlag)
 			}
-			realFrameFlag, _ := f.ReadUint64()   //第二个frame不会被处理，是用于比较第一个的，防止第一个在传输过程中被处理错了
-			if frameFlag != realFrameFlag {
+			realFrameFlag, errRealFlag := f.ReadUint64()   //第二个frame不会被处理，是用于比较第一个的，防止第一个在传输过程中被处理错了
+			if frameFlag != realFrameFlag || errRealFlag != nil {
+				fmt.Println(errRealFlag)
 				fmt.Printf("expect flag:0x%x Got flag: 0x%x\n",realFrameFlag,frameFlag)
 				return FRAME_HEADER_LEN, fmt.Errorf("expect flag:0x%x Got flag: 0x%x\n",realFrameFlag,frameFlag)
 			}

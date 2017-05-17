@@ -52,7 +52,7 @@ func GetRandom64Number() uint64{
         [2byte][8byte][8byte][data]为了返回时能够校验8byte的校验码，特地把校验码加到校验码的后面，
         当然服务端回复时必须把检验码带回来
  */
-func BuildFrame(data []byte, randomNum int, isServer uint64) (MultiFrame []byte,err error) {
+func BuildFrame(data []byte, randomNum int, isServer uint64,randomFlag bool) (MultiFrame []byte,err error) {
 	for i := 0; i < randomNum; i++ {
 		lenScale := GetRandomNumber(50) + 1 //at least one, it can't be zero
 		length := len(data) * lenScale
@@ -60,11 +60,15 @@ func BuildFrame(data []byte, randomNum int, isServer uint64) (MultiFrame []byte,
 			return nil, fmt.Errorf("message too long\n")
 		}
 		frameHeader := make([]byte, FRAME_HEADER_LEN + length + 8)
-		fmt.Printf("lenScale:%d, length of data:%d, length:%d\n",lenScale,len(data),length)
 		f := NewBEStream(frameHeader)
 		f.WriteUint16(uint16(length) + 10 + 8)
 		frameFlag := GetRandom64Number()
-		f.WriteUint64(frameFlag)
+		if randomFlag{
+			f.WriteUint64(frameFlag)
+		}else{
+			f.WriteUint64(isServer)
+		}
+
 		if isServer != 0 {   //如果是server端，需要把读到frameFlag传进来
 			f.WriteUint64(isServer) //写两遍
 		}else {
@@ -80,14 +84,12 @@ func BuildFrame(data []byte, randomNum int, isServer uint64) (MultiFrame []byte,
 		}
 		MultiFrame = append(MultiFrame,f.buff[:f.pos]...)
 	}
-
 	return MultiFrame, nil
 }
 
 
-func WriteFrame(data[]byte,randomNum int,isServer uint64, conn net.Conn) (int, error) {
-	fmt.Println("in the writeframe, the randomnum:",randomNum)
-	frame , err := BuildFrame(data,randomNum,isServer)
+func WriteFrame(data[]byte,randomNum int,isServer uint64, randomFlag bool, conn net.Conn) (int, error) {
+	frame , err := BuildFrame(data,randomNum,isServer,randomFlag)
 	if err != nil{
 		return 0, err
 	}
@@ -146,7 +148,6 @@ func ReadFrame(conn net.Conn,randomNum int,flag bool) (frameFlag2 uint64,err err
 			fmt.Printf("the whole frame flag:0x%x%x%x%x%x%x\n",a,b,c,d,sport,other)
 
 			frameFlag2,err = f.ReadUint64() //服务端方向，把读到的frameFlag返回，然后再发送回客户端
-			fmt.Println("in the server, got second frameFlag:",frameFlag2)
 			if err != nil {
 				return 0, err
 			}

@@ -25,6 +25,7 @@ options:
 	-s: what message to send (less than 1020) (client), default is hi,this is from client
 	-r: what message to response (less than 1020) (server), default is hi,this is server
 	-d: response to client after x second  (server), default is without delay
+	-f: set the flag is random or not (server), default is false.
 	`
 
 	c = flag.Int("c", 50, "number of requests to run")
@@ -34,6 +35,7 @@ options:
 	s = flag.String("s", "hi,this is from client", "send message")
 	r = flag.String("r", "hi,this is server", "response message")
 	d time.Duration
+	f = flag.Bool("f",false,"random flag")
 )
 
 func init() {
@@ -92,9 +94,8 @@ func handleClient(ch chan<- bool, address string) error {
 	//send
 	go func(){
 		for i := 0; i < *q; i++ {
-			fmt.Println("in the send")
 			randomNum := proto.GetRandomNumber(10)  //it only send sync packet when the randomNum is zero
-			_, err := proto.WriteFrame([]byte(*s),randomNum,0, conn)
+			_, err := proto.WriteFrame([]byte(*s),randomNum,0,true, conn)
 			if err != nil {
 				fmt.Println(err)
 				return
@@ -108,7 +109,6 @@ func handleClient(ch chan<- bool, address string) error {
 	//receive
 	go func(){
 		for i := 0; i < *q; i++ {
-			fmt.Println("in the receive")
 			randomNum := <- randomChan
 			_, err := proto.ReadFrame(conn,randomNum, false)
 			if err == io.EOF {
@@ -121,7 +121,7 @@ func handleClient(ch chan<- bool, address string) error {
 		}
 		//close(randomChan)不要在接收端方向关闭
 		doneChan <- struct {}{}
-		close(doneChan)
+
 	}()
 
 	<- doneChan
@@ -145,7 +145,7 @@ func client(address string) error {
 		<-ch
 		fmt.Println("a connection has been close.....")
 	}
-	
+
 	close(ch)
 	return nil
 }
@@ -162,8 +162,7 @@ func handleServer(conn net.Conn)error {
 			return err
 		}
 		time.Sleep( time.Duration(proto.GetRandomNumber(10000)) * time.Millisecond)
-		fmt.Println("the server got the second frame:",frameFlag)
-		_, err = proto.WriteFrame([]byte(*r),1,frameFlag,conn)
+		_, err = proto.WriteFrame([]byte(*r),1,frameFlag,*f,conn)
 		if err != nil {
 			fmt.Println(err)
 			return err

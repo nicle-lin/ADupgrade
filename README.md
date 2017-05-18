@@ -1,2 +1,2 @@
 ## ADupgrade
-# ADupgrade is for sangfor company departmant AD production to upgrade
+# ADupgrade is for xxx company departmant yy production to upgrade

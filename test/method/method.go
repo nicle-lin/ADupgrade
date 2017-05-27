@@ -4,16 +4,27 @@ import (
 	"reflect"
 	"fmt"
 )
-type S struct{}
+type S struct{
+	good string
+}
 type T struct {
 	S
+	bad string
 }
 
-func (S) sVal(){}
-func (*S)sPtr(){}
+func (S) sVal(){
+	println("good S")
+}
+func (*S)sPtr(){
+	println("good ss")
+}
 
-func(T)tVal(){}
-func (*T)tPtr(){}
+func(T)tVal(){
+	println("bad T")
+}
+func (*T)tPtr(){
+	println("bad TT")
+}
 
 func methodSet(a interface{}){
 	t := reflect.TypeOf(a)

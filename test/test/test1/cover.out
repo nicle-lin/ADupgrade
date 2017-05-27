@@ -1,0 +1,13 @@
+mode: count
+github.com/nicle-lin/ADupgrade/test/test/test1/test.go:3.27,4.20 1 6
+github.com/nicle-lin/ADupgrade/test/test/test1/test.go:7.2,7.19 1 5
+github.com/nicle-lin/ADupgrade/test/test/test1/test.go:10.2,10.19 1 5
+github.com/nicle-lin/ADupgrade/test/test/test1/test.go:13.2,13.20 1 5
+github.com/nicle-lin/ADupgrade/test/test/test1/test.go:16.2,16.14 1 1
+github.com/nicle-lin/ADupgrade/test/test/test1/test.go:4.20,6.3 1 1
+github.com/nicle-lin/ADupgrade/test/test/test1/test.go:7.19,9.3 1 0
+github.com/nicle-lin/ADupgrade/test/test/test1/test.go:10.19,12.3 1 0
+github.com/nicle-lin/ADupgrade/test/test/test1/test.go:13.20,15.3 1 4
+github.com/nicle-lin/ADupgrade/test/test/test1/test.go:19.28,20.12 1 7
+github.com/nicle-lin/ADupgrade/test/test/test1/test.go:23.2,23.14 1 7
+github.com/nicle-lin/ADupgrade/test/test/test1/test.go:20.12,22.3 1 0

@@ -9,8 +9,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"gopcp.v2/chapter4/loadgen/lib"
-	"gopcp.v2/helper/log"
+	"github.com/nicle-lin/ADupgrade/test/LoadBalance/helper/log"
+	"github.com/nicle-lin/ADupgrade/test/LoadBalance/lib"
 )
 
 // 日志记录器。

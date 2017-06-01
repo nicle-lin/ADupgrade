@@ -9,7 +9,7 @@ import (
 	"net"
 	"time"
 
-	loadgenlib "gopcp.v2/chapter4/loadgen/lib"
+	loadgenlib "github.com/nicle-lin/ADupgrade/test/LoadBalance/lib"
 )
 
 const (

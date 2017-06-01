@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"gopcp.v2/chapter4/loadgen/lib"
+	"github.com/nicle-lin/ADupgrade/test/LoadBalance/lib"
 )
 
 // ParamSet 代表了载荷发生器参数的集合。

@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"gopcp.v2/helper/log"
+	"github.com/nicle-lin/ADupgrade/test/LoadBalance/helper/log"
 )
 
 // 日志记录器。

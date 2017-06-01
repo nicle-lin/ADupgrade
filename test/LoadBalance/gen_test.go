@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	loadgenlib "gopcp.v2/chapter4/loadgen/lib"
-	helper "gopcp.v2/chapter4/loadgen/testhelper"
+	loadgenlib "github.com/nicle-lin/ADupgrade/test/LoadBalance/lib"
+	helper "github.com/nicle-lin/ADupgrade/test/LoadBalance/testhelper"
 )
 
 // printDetail 代表是否打印详细结果。
